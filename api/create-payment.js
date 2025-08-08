@@ -16,7 +16,7 @@ export default async function handler(req, res) {
           id: 'access-time',
           title: 'Acesso de 1 hora ao App',
           quantity: 1,
-          unit_price: 0.01 // <-- ALTERE O VALOR REAL AQUI
+          unit_price: 0.25 // <-- ALTERE O VALOR REAL AQUI
         }
       ],
       // Outras configurações como back_urls, etc.
