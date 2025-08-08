@@ -6,16 +6,14 @@
     <title data-key="title">Correção de Prova com IA - Projeto de Jean Tedesqui</title>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
-        /* --- ESTILOS COMBINADOS --- */
-
-        /* Estilos base e da tela de pagamento (do primeiro arquivo, com ajustes) */
+        /* (Estilos CSS permanecem os mesmos da versão anterior) */
         body, html { 
             margin: 0; 
             padding: 0; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: black; 
             color: white; 
-            overflow: hidden; /* Do segundo arquivo, para a app principal */
+            overflow: hidden;
         }
         #payment-screen { 
             display: flex; 
@@ -41,11 +39,9 @@
             max-width: 90%; 
         }
         #main-app { 
-            display: none; /* A aplicação começa escondida */
+            display: none;
             height: 100vh; 
         }
-
-        /* Estilos da aplicação principal (do segundo arquivo) */
         video, canvas { 
             position: absolute; 
             top: 0; 
@@ -148,105 +144,17 @@
     </div>
 
     <script>
-        const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb"; // Chave pública do Mercado Pago
-        const MP_SERVER_CREATE = "/api/create-payment"; // Endpoint para criar pagamento
-
+        // (Script de pagamento e controle de acesso permanece o mesmo)
+        const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb";
+        const MP_SERVER_CREATE = "/api/create-payment";
         const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
-
-        function getSessionId() {
-          let sid = sessionStorage.getItem("mp_session_id");
-          if (!sid) {
-            sid = crypto.randomUUID();
-            sessionStorage.setItem("mp_session_id", sid);
-          }
-          return sid;
-        }
-
-        function setAccess(expiryMillis) {
-          const data = { expiry: expiryMillis, grantedAt: Date.now() };
-          sessionStorage.setItem("accessToken", JSON.stringify(data));
-        }
-
-        function hasAccess() {
-          const t = sessionStorage.getItem("accessToken");
-          if (!t) return false;
-          try {
-            const obj = JSON.parse(t);
-            return Date.now() < obj.expiry;
-          } catch(e) { return false; }
-        }
-
-        function showMainApp() {
-          document.getElementById("payment-screen").style.display = "none";
-          document.getElementById("main-app").style.display = "block";
-          document.getElementById("main-app").ariaHidden = "false";
-          try { 
-              if (typeof window.afterPaymentUnlocked === 'function' && !window.appInitialized) {
-                  window.afterPaymentUnlocked(); 
-                  window.appInitialized = true; // Previne reinicialização
-              }
-          } catch(e){ console.warn(e); }
-        }
-
-        window.addEventListener("keydown", (e) => {
-          if ((e.key === "F5") || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
-            e.preventDefault();
-            alert("Recarregamento bloqueado. Feche a aba para encerrar a sessão.");
-          }
-        });
-
-        // Verifica se já tem acesso ao carregar a página
-        if (hasAccess()) {
-          showMainApp();
-        } else {
-          // Fallback para retornos de redirect
-          const params = new URLSearchParams(window.location.search);
-          if (params.get("status") === "success") {
-            const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
-            setAccess(expiry);
-            history.replaceState({}, "", location.pathname);
-            showMainApp();
-          }
-        }
-
-        // Evento do botão de pagar
-        document.getElementById("pay-btn").addEventListener("click", async () => {
-          const sessionId = getSessionId();
-          try {
-            const res = await fetch(MP_SERVER_CREATE, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sessionId })
-            });
-            if (!res.ok) throw new Error("Erro ao iniciar pagamento");
-            
-            const data = await res.json();
-            mp.checkout({
-              preference: { id: data.preferenceId },
-              autoOpen: true,
-              render: { container: '#wallet_container', label: 'Pagar' }
-            });
-
-            // Verifica o status do pagamento periodicamente
-            const checkInterval = setInterval(async () => {
-              try {
-                const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId));
-                if (r.ok) {
-                  const j = await r.json();
-                  if (j.paid) {
-                    clearInterval(checkInterval);
-                    const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
-                    setAccess(expiry);
-                    document.getElementById('wallet_container').innerHTML = '';
-                    showMainApp();
-                  }
-                }
-              } catch(e){ console.error("Erro na verificação de status:", e); }
-            }, 3000);
-          } catch (error) {
-            alert(error.message);
-          }
-        });
+        function getSessionId() { let sid = sessionStorage.getItem("mp_session_id"); if (!sid) { sid = crypto.randomUUID(); sessionStorage.setItem("mp_session_id", sid); } return sid; }
+        function setAccess(expiryMillis) { const data = { expiry: expiryMillis, grantedAt: Date.now() }; sessionStorage.setItem("accessToken", JSON.stringify(data)); }
+        function hasAccess() { const t = sessionStorage.getItem("accessToken"); if (!t) return false; try { const obj = JSON.parse(t); return Date.now() < obj.expiry; } catch(e) { return false; } }
+        function showMainApp() { document.getElementById("payment-screen").style.display = "none"; document.getElementById("main-app").style.display = "block"; document.getElementById("main-app").ariaHidden = "false"; try { if (typeof window.afterPaymentUnlocked === 'function' && !window.appInitialized) { window.afterPaymentUnlocked(); window.appInitialized = true; } } catch(e){ console.warn(e); } }
+        window.addEventListener("keydown", (e) => { if ((e.key === "F5") || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) { e.preventDefault(); alert("Recarregamento bloqueado. Feche a aba para encerrar a sessão."); } });
+        if (hasAccess()) { showMainApp(); } else { const params = new URLSearchParams(window.location.search); if (params.get("status") === "success") { const expiry = Date.now() + (60 * 60 * 1000); setAccess(expiry); history.replaceState({}, "", location.pathname); showMainApp(); } }
+        document.getElementById("pay-btn").addEventListener("click", async () => { const sessionId = getSessionId(); try { const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId }) }); if (!res.ok) throw new Error("Erro ao iniciar pagamento"); const data = await res.json(); mp.checkout({ preference: { id: data.preferenceId }, autoOpen: true, render: { container: '#wallet_container', label: 'Pagar' } }); const checkInterval = setInterval(async () => { try { const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId)); if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); const expiry = Date.now() + (60 * 60 * 1000); setAccess(expiry); document.getElementById('wallet_container').innerHTML = ''; showMainApp(); } } } catch(e){ console.error("Erro na verificação de status:", e); } }, 3000); } catch (error) { alert(error.message); } });
     </script>
 
     <script>
@@ -260,64 +168,57 @@
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
         const zoomLevels = [1, 1.5, 2, 3];
-
-        const translations = {
-            "en": { "title": "AI Proof Corrector - Project by Jean Tedesqui", "capture_button": "📷 Click to Correct", "status_initial": "📷 Point the camera at the text and capture.", "status_reading": "🧠 Reading text from the image...", "status_processing": "🤖 Processing with AI...", "status_error_camera": "❌ Error accessing the camera.", "status_error_ocr": "❌ Error reading the text: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Review the extracted text and click to get the answer:</strong>", "retry_button": "Capture Again", "get_answer_button": "Get Answer", "empty_text_alert": "The text field cannot be empty.", "result_title": "✅ Result" },
-            "es": { "title": "Corrector de Pruebas con IA - Proyecto de Jean Tedesqui", "capture_button": "📷 Clic para Corregir", "status_initial": "📷 Apunta la cámara al texto y captura.", "status_reading": "🧠 Leyendo el texto de la imagen...", "status_processing": "🤖 Procesando con IA...", "status_error_camera": "❌ Error al acceder a la cámara.", "status_error_ocr": "❌ Error al leer el texto: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>", "retry_button": "Capturar de Nuevo", "get_answer_button": "Obtener Respuesta", "empty_text_alert": "El campo de texto no puede estar vacío.", "result_title": "✅ Resultado" },
-            "pt": { "title": "Correção de Prova com IA - Projeto de Jean Tedesqui", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" }
-        };
+        const translations = { "en": { "title": "AI Proof Corrector - Project by Jean Tedesqui", "capture_button": "📷 Click to Correct", "status_initial": "📷 Point the camera at the text and capture.", "status_reading": "🧠 Reading text from the image...", "status_processing": "🤖 Processing with AI...", "status_error_camera": "❌ Error accessing the camera.", "status_error_ocr": "❌ Error reading the text: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Review the extracted text and click to get the answer:</strong>", "retry_button": "Capture Again", "get_answer_button": "Get Answer", "empty_text_alert": "The text field cannot be empty.", "result_title": "✅ Result" }, "es": { "title": "Corrector de Pruebas con IA - Proyecto de Jean Tedesqui", "capture_button": "📷 Clic para Corregir", "status_initial": "📷 Apunta la cámara al texto y captura.", "status_reading": "🧠 Leyendo el texto de la imagen...", "status_processing": "🤖 Procesando con IA...", "status_error_camera": "❌ Error al acceder a la cámara.", "status_error_ocr": "❌ Error al leer el texto: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>", "retry_button": "Capturar de Nuevo", "get_answer_button": "Obtener Respuesta", "empty_text_alert": "El campo de texto no puede estar vacío.", "result_title": "✅ Resultado" }, "pt": { "title": "Correção de Prova com IA - Projeto de Jean Tedesqui", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" } };
         let currentLang = 'pt';
 
-        function setLanguage(lang) {
-            const langCode = lang.split('-')[0];
-            currentLang = translations[langCode] ? langCode : 'pt';
-            document.documentElement.lang = currentLang;
-            document.querySelectorAll('[data-key]').forEach(element => {
-                const key = element.getAttribute('data-key');
-                if (translations[currentLang][key]) {
-                    element.innerHTML = translations[currentLang][key];
+        // --- FUNÇÃO DA CÂMERA MODIFICADA ---
+        async function startCamera() {
+            try {
+                // Pedido mais genérico para a câmera, aumenta a compatibilidade.
+                const constraints = { video: true }; 
+                
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("A API de mídia não é suportada neste navegador.");
                 }
-            });
-            const titleElement = document.querySelector('title[data-key="title"]');
-            if (titleElement) {
-                titleElement.innerText = translations[currentLang].title;
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                mediaTrack = stream.getVideoTracks()[0];
+                const capabilities = mediaTrack.getCapabilities();
+                
+                // Esconde o botão de zoom se a câmera não tiver o recurso.
+                if (!capabilities.zoom || capabilities.zoom.max <= 1) {
+                    zoomBtn.style.display = 'none';
+                }
+            } catch (err) {
+                // Log detalhado do erro para depuração
+                console.error("Erro detalhado ao iniciar a câmera:", err.name, err.message);
+
+                // Mensagem de erro mais útil para o usuário
+                let userMessage = translations[currentLang].status_error_camera;
+                if (err.name === "NotAllowedError") {
+                    userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>";
+                } else if (err.name === "NotFoundError") {
+                    userMessage += "<br><small>Nenhuma câmera foi encontrada no seu dispositivo.</small>";
+                } else {
+                     userMessage += "<br><small>Verifique se a página está em HTTPS e se a câmera não está sendo usada por outro app.</small>";
+                }
+                outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
             }
         }
-
-        async function startCamera() { try { const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } }; const stream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject = stream; mediaTrack = stream.getVideoTracks()[0]; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; } } catch (err) { console.error("Erro ao iniciar a câmera:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_camera}</div>`; } }
+        
+        // --- Restante do script da aplicação (sem alterações) ---
+        function setLanguage(lang) { const langCode = lang.split('-')[0]; currentLang = translations[langCode] ? langCode : 'pt'; document.documentElement.lang = currentLang; document.querySelectorAll('[data-key]').forEach(element => { const key = element.getAttribute('data-key'); if (translations[currentLang][key]) { element.innerHTML = translations[currentLang][key]; } }); const titleElement = document.querySelector('title[data-key="title"]'); if (titleElement) { titleElement.innerText = translations[currentLang].title; } }
         function toggleZoom() { if (!mediaTrack) return; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; if (currentZoom > capabilities.zoom.max) currentZoom = zoomLevels[0]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
         function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text" data-key="status_initial">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
         function addRetryButton(action) { const existing = outputPanel.querySelector('.retry-button-bottom'); if (existing) return; const btn = document.createElement('button'); btn.innerText = translations[currentLang].retry_button; btn.className = 'retry-button-bottom'; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
         async function captureAndRecognize() { captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none'; outputPanel.innerHTML = `<div id="status-text" data-key="status_reading">${translations[currentLang].status_reading}</div>`; try { const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageDataUrl }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro no OCR: ${response.status}`); } const data = await response.json(); showConfirmationView(data.text.trim()); } catch (err) { console.error("Erro no OCR:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_ocr}${err.message}</div>`; addRetryButton(resetUI); } }
-        
-        function showConfirmationView(ocrText) {
-            const html = `<div id="confirmation-view"><p data-key="confirm_prompt">${translations[currentLang].confirm_prompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary" data-key="retry_button">${translations[currentLang].retry_button}</button><button id="sendBtn" class="confirm" data-key="get_answer_button">${translations[currentLang].get_answer_button}</button></div></div>`;
-            outputPanel.innerHTML = html;
-            document.getElementById('retryBtn').addEventListener('click', resetUI);
-            document.getElementById('sendBtn').addEventListener('click', sendForCorrection);
-        }
-        
-        async function sendForCorrection() {
-            const textToProcess = document.getElementById('text-to-process').value;
-            if (!textToProcess.trim()) { alert(translations[currentLang].empty_text_alert); return; }
-            outputPanel.innerHTML = `<div id="status-text" data-key="status_processing">${translations[currentLang].status_processing}</div>`;
-            try {
-                const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) });
-                if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro na API: ${response.status}`); }
-                const data = await response.json();
-                outputPanel.innerHTML = `<h2 data-key="result_title">${translations[currentLang].result_title}</h2><pre id="correction-result">${data.resultado}</pre>`;
-            } catch (err) {
-                console.error("Erro na requisição:", err);
-                outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_api}${err.message}</div>`;
-            } finally {
-                addRetryButton(resetUI);
-            }
-        }
+        function showConfirmationView(ocrText) { const html = `<div id="confirmation-view"><p data-key="confirm_prompt">${translations[currentLang].confirm_prompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary" data-key="retry_button">${translations[currentLang].retry_button}</button><button id="sendBtn" class="confirm" data-key="get_answer_button">${translations[currentLang].get_answer_button}</button></div></div>`; outputPanel.innerHTML = html; document.getElementById('retryBtn').addEventListener('click', resetUI); document.getElementById('sendBtn').addEventListener('click', sendForCorrection); }
+        async function sendForCorrection() { const textToProcess = document.getElementById('text-to-process').value; if (!textToProcess.trim()) { alert(translations[currentLang].empty_text_alert); return; } outputPanel.innerHTML = `<div id="status-text" data-key="status_processing">${translations[currentLang].status_processing}</div>`; try { const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro na API: ${response.status}`); } const data = await response.json(); outputPanel.innerHTML = `<h2 data-key="result_title">${translations[currentLang].result_title}</h2><pre id="correction-result">${data.resultado}</pre>`; } catch (err) { console.error("Erro na requisição:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_api}${err.message}</div>`; } finally { addRetryButton(resetUI); } }
 
         zoomBtn.addEventListener('click', toggleZoom);
         captureBtn.addEventListener('click', captureAndRecognize);
         
-        // Inicializa a aplicação
         setLanguage(navigator.language || navigator.userLanguage);
         startCamera();
     };
