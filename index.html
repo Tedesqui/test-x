@@ -74,8 +74,6 @@
             }
         }
         
-        // BLOQUEIO DE RECARREGAMENTO FOI REMOVIDO DESTA SEÇÃO
-
         if (hasAccess()) {
             showMainApp();
         } else {
@@ -132,7 +130,9 @@
 
         async function startCamera() {
             try {
-                const constraints = { video: true };
+                // LINHA ALTERADA: Pede especificamente a câmera traseira.
+                const constraints = { video: { facingMode: "environment" } };
+
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error("A API de mídia não é suportada neste navegador.");
                 }
@@ -145,11 +145,14 @@
                 }
             } catch (err) {
                 console.error("Erro ao iniciar a câmera:", err.name, err.message);
-                let userMessage = translations[currentLang].status_error_camera || "Erro ao acessar a câmera.";
+                let userMessage = translations.pt.status_error_camera || "Erro ao acessar a câmera.";
                 if (err.name === "NotAllowedError") {
                     userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>";
-                } else {
-                     userMessage += "<br><small>Verifique se a página está em HTTPS e se a câmera não está sendo usada por outro app.</small>";
+                } else if (err.name === "OverconstrainedError") {
+                    userMessage += `<br><small>Seu dispositivo não conseguiu atender à requisição da câmera traseira. Erro: ${err.message}</small>`;
+                }
+                else {
+                     userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`;
                 }
                 outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
             }
