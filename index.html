@@ -1,168 +1,256 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Correção de Prova com IA - Projeto de Jean Tedesqui</title>
-<script src="https://sdk.mercadopago.com/js/v2"></script>
-<style>
-  body, html { margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#000; color:#fff; height:100vh; }
-  #payment-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; height:100vh; text-align:center; }
-  #pay-btn { padding:14px 22px; font-size:18px; border-radius:8px; border:none; background:#28a745; color:white; cursor:pointer; }
-  #wallet_container { margin-top:10px; width:320px; max-width:90%; }
-  #main-app { display:none; height:100vh; }
-</style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title data-key="title">Correção de Prova com IA - Projeto de Jean Tedesqui</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <style>
+        /* --- ESTILOS COMBINADOS --- */
+
+        /* Estilos base e da tela de pagamento (do primeiro arquivo, com ajustes) */
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: black; 
+            color: white; 
+            overflow: hidden; /* Do segundo arquivo, para a app principal */
+        }
+        #payment-screen { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 16px; 
+            height: 100vh; 
+            text-align: center; 
+        }
+        #pay-btn { 
+            padding: 14px 22px; 
+            font-size: 18px; 
+            border-radius: 8px; 
+            border: none; 
+            background: #28a745; 
+            color: white; 
+            cursor: pointer; 
+        }
+        #wallet_container { 
+            margin-top: 10px; 
+            width: 320px; 
+            max-width: 90%; 
+        }
+        #main-app { 
+            display: none; /* A aplicação começa escondida */
+            height: 100vh; 
+        }
+
+        /* Estilos da aplicação principal (do segundo arquivo) */
+        video, canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            object-fit: cover; 
+            z-index: 0; 
+        }
+        canvas { display: none; }
+        #ui-container { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            z-index: 2; 
+        }
+        #controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0));
+        }
+        button { 
+            padding: 12px 20px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+        }
+        button:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
+        #output-panel { 
+            background: rgba(0,0,0,0.9); 
+            padding: 15px; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+            box-sizing: border-box; 
+            border-top: 1px solid #444; 
+        }
+        #confirmation-view { display: flex; flex-direction: column; gap: 15px; }
+        #confirmation-view p { margin: 0; font-size: 0.9em; color: #ccc; }
+        textarea { 
+            width: 100%; 
+            min-height: 120px; 
+            background: #2a2a2a; 
+            border: 1px solid #444; 
+            border-radius: 6px; 
+            color: white; 
+            font-size: 1em; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            resize: vertical; 
+        }
+        textarea:focus { outline: none; border-color: #007bff; }
+        #confirmation-controls { display: flex; gap: 10px; justify-content: flex-end; }
+        #confirmation-controls button.confirm { background-color: #28a745; }
+        #confirmation-controls button.secondary { background-color: #6c757d; }
+        pre#correction-result { 
+            background-color: #2a2a2a; 
+            padding: 1rem; 
+            border-radius: 6px; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            line-height: 1.6; 
+        }
+    </style>
 </head>
 <body>
-<div id="payment-screen" aria-live="polite">
-  <h2>🔒 Acesso Restrito</h2>
-  <p>Para usar este site por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 4,90</strong>.</p>
-  <button id="pay-btn">💳 Pagar R$ 4,90</button>
-  <div id="wallet_container"></div>
-  <p style="font-size:0.9em;color:#ccc;margin-top:8px">Pagamento seguro — cartão, PIX e boleto.</p>
-</div>
-
-<div id="main-app" aria-hidden="true">
-<!-- INICIO DO HTML ORIGINAL (será mostrado após pagamento) -->
-<!-- Video app original -->
-<video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
-<div id="ui-container">
-    <div id="controls">
-        <button id="zoomBtn">🔍 Zoom: 1x</button>
-        <button id="captureBtn" data-key="capture_button">📷 Clique para Corrigir</button>
+    <div id="payment-screen" aria-live="polite">
+      <h2>🔒 Acesso Restrito</h2>
+      <p>Para usar este site por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 4,90</strong>.</p>
+      <button id="pay-btn">💳 Pagar R$ 4,90</button>
+      <div id="wallet_container"></div>
+      <p style="font-size:0.9em;color:#ccc;margin-top:8px">Pagamento seguro — cartão, PIX e boleto.</p>
     </div>
-    <div id="output-panel">
-        <div id="status-text" data-key="status_initial">📷 Aponte a câmera para o texto e capture.</div>
+
+    <div id="main-app" aria-hidden="true">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div id="ui-container">
+            <div id="controls">
+                <button id="zoomBtn">🔍 Zoom: 1x</button>
+                <button id="captureBtn" data-key="capture_button">📷 Clique para Corrigir</button>
+            </div>
+            <div id="output-panel">
+                <div id="status-text" data-key="status_initial">📷 Aponte a câmera para o texto e capture.</div>
+            </div>
+        </div>
     </div>
-</div>
-<!-- FIM DO HTML ORIGINAL -->
-</div>
 
-<script>
-/*
-  INSTRUÇÕES:
-  - Substitua SUA_PUBLIC_KEY pela Public Key do Mercado Pago (Frontend).
-  - Faça deploy do backend (api/create-payment.js) na Vercel; defina MP_ACCESS_TOKEN no ambiente.
-  - Este demo usa sessionStorage para evitar que o token fique no link (proteção básica contra compartilhamento).
-  - Refresh (F5/Ctrl+R) é interceptado; fechar a aba encerra a sessão.
-*/
+    <script>
+        const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb"; // Chave pública do Mercado Pago
+        const MP_SERVER_CREATE = "/api/create-payment"; // Endpoint para criar pagamento
 
-// configurações
-const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb"; // <<< substitua antes de deploy
-const MP_SERVER_CREATE = "/api/create-payment"; // endpoint que cria a preferência
+        const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
 
-// instancia MercadoPago
-const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
-
-// gerencia sessão temporária (ex.: sessionId)
-function getSessionId() {
-  let sid = sessionStorage.getItem("mp_session_id");
-  if (!sid) {
-    sid = crypto.randomUUID();
-    sessionStorage.setItem("mp_session_id", sid);
-  }
-  return sid;
-}
-
-function setAccess(expiryMillis) {
-  const data = { expiry: expiryMillis, grantedAt: Date.now() };
-  sessionStorage.setItem("accessToken", JSON.stringify(data));
-}
-
-function hasAccess() {
-  const t = sessionStorage.getItem("accessToken");
-  if (!t) return false;
-  try {
-    const obj = JSON.parse(t);
-    return Date.now() < obj.expiry;
-  } catch(e) { return false; }
-}
-
-function showMainApp() {
-  document.getElementById("payment-screen").style.display = "none";
-  document.getElementById("main-app").style.display = "block";
-  document.getElementById("main-app").ariaHidden = "false";
-  // initialize your original app (start camera etc)
-  try { window.afterPaymentUnlocked && window.afterPaymentUnlocked(); } catch(e){ console.warn(e); }
-}
-
-// prevent F5 / Ctrl+R reload
-window.addEventListener("keydown", (e) => {
-  if ((e.key === "F5") || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
-    e.preventDefault();
-    alert("Recarregamento bloqueado. Feche a aba para encerrar a sessão.");
-  }
-});
-
-// check on load
-if (hasAccess()) {
-  showMainApp();
-} else {
-  // if url has ?status=success redirect param (fallback for some flows)
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("status") === "success") {
-    const expiry = Date.now() + (60 * 60 * 1000);
-    setAccess(expiry);
-    // clean url and show main
-    history.replaceState({}, "", location.pathname);
-    showMainApp();
-  }
-}
-
-// botão pagar
-document.getElementById("pay-btn").addEventListener("click", async () => {
-  const sessionId = getSessionId();
-  const res = await fetch(MP_SERVER_CREATE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId })
-  });
-  if (!res.ok) {
-    alert("Erro ao iniciar pagamento");
-    return;
-  }
-  const data = await res.json();
-  const prefId = data.preferenceId;
-
-  // render checkout inline in wallet_container
-  mp.checkout({
-    preference: { id: prefId },
-    autoOpen: true,
-    render: {
-      container: '#wallet_container',
-      label: 'Pagar R$ 4,90'
-    }
-  });
-
-  // Poll for payment approval: backend can mark session as paid (webhook) — here we poll /api/check-status
-  const checkInterval = setInterval(async () => {
-    try {
-      const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId));
-      if (r.ok) {
-        const j = await r.json();
-        if (j.paid) {
-          clearInterval(checkInterval);
-          // grant access for 1 hour
-          const expiry = Date.now() + (60 * 60 * 1000);
-          setAccess(expiry);
-          // remove wallet UI and show main app
-          document.getElementById('wallet_container').innerHTML = '';
-          showMainApp();
+        function getSessionId() {
+          let sid = sessionStorage.getItem("mp_session_id");
+          if (!sid) {
+            sid = crypto.randomUUID();
+            sessionStorage.setItem("mp_session_id", sid);
+          }
+          return sid;
         }
-      }
-    } catch(e){}
-  }, 3000);
 
-});
+        function setAccess(expiryMillis) {
+          const data = { expiry: expiryMillis, grantedAt: Date.now() };
+          sessionStorage.setItem("accessToken", JSON.stringify(data));
+        }
 
-</script>
+        function hasAccess() {
+          const t = sessionStorage.getItem("accessToken");
+          if (!t) return false;
+          try {
+            const obj = JSON.parse(t);
+            return Date.now() < obj.expiry;
+          } catch(e) { return false; }
+        }
 
-<!-- small script to initialize original app only after payment -->
-<script>
-window.afterPaymentUnlocked = function(){
-    // original HTML's JS logic — copied minimal boot to start camera and listeners
-    (function(){
+        function showMainApp() {
+          document.getElementById("payment-screen").style.display = "none";
+          document.getElementById("main-app").style.display = "block";
+          document.getElementById("main-app").ariaHidden = "false";
+          try { 
+              if (typeof window.afterPaymentUnlocked === 'function' && !window.appInitialized) {
+                  window.afterPaymentUnlocked(); 
+                  window.appInitialized = true; // Previne reinicialização
+              }
+          } catch(e){ console.warn(e); }
+        }
+
+        window.addEventListener("keydown", (e) => {
+          if ((e.key === "F5") || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
+            e.preventDefault();
+            alert("Recarregamento bloqueado. Feche a aba para encerrar a sessão.");
+          }
+        });
+
+        // Verifica se já tem acesso ao carregar a página
+        if (hasAccess()) {
+          showMainApp();
+        } else {
+          // Fallback para retornos de redirect
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("status") === "success") {
+            const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
+            setAccess(expiry);
+            history.replaceState({}, "", location.pathname);
+            showMainApp();
+          }
+        }
+
+        // Evento do botão de pagar
+        document.getElementById("pay-btn").addEventListener("click", async () => {
+          const sessionId = getSessionId();
+          try {
+            const res = await fetch(MP_SERVER_CREATE, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId })
+            });
+            if (!res.ok) throw new Error("Erro ao iniciar pagamento");
+            
+            const data = await res.json();
+            mp.checkout({
+              preference: { id: data.preferenceId },
+              autoOpen: true,
+              render: { container: '#wallet_container', label: 'Pagar' }
+            });
+
+            // Verifica o status do pagamento periodicamente
+            const checkInterval = setInterval(async () => {
+              try {
+                const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId));
+                if (r.ok) {
+                  const j = await r.json();
+                  if (j.paid) {
+                    clearInterval(checkInterval);
+                    const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
+                    setAccess(expiry);
+                    document.getElementById('wallet_container').innerHTML = '';
+                    showMainApp();
+                  }
+                }
+              } catch(e){ console.error("Erro na verificação de status:", e); }
+            }, 3000);
+          } catch (error) {
+            alert(error.message);
+          }
+        });
+    </script>
+
+    <script>
+    window.afterPaymentUnlocked = function(){
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -171,26 +259,68 @@ window.afterPaymentUnlocked = function(){
         const zoomBtn = document.getElementById("zoomBtn");
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
-        const zoomLevels = [1,1.5,2,3];
+        const zoomLevels = [1, 1.5, 2, 3];
 
-        const translations = {/* minimal placeholder to avoid errors */ "pt": { "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading":"🧠 Lendo o texto da imagem..." } };
-        let currentLang='pt';
-        function setLanguage(l){ currentLang='pt'; }
-        async function startCamera(){ try{ const constraints={video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}}; const stream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject=stream; mediaTrack=stream.getVideoTracks()[0]; const capabilities=mediaTrack.getCapabilities(); if(!capabilities.zoom||capabilities.zoom.max<=1){ zoomBtn.style.display='none'; } } catch(err){ outputPanel.innerHTML = '<div id="status-text">Erro ao acessar a câmera.</div>'; } }
-        function toggleZoom(){ if(!mediaTrack) return; const capabilities=mediaTrack.getCapabilities(); if(!capabilities.zoom) return; const currentIndex=zoomLevels.indexOf(currentZoom); currentZoom=zoomLevels[(currentIndex+1)%zoomLevels.length]; if(currentZoom>capabilities.zoom.max) currentZoom=zoomLevels[0]; mediaTrack.applyConstraints({ advanced:[{ zoom: currentZoom }]}); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
-        function resetUI(){ canvas.style.display='none'; video.style.display='block'; outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display='flex'; captureBtn.disabled=false; }
-        function addRetryButton(action){ const existing=outputPanel.querySelector('.retry-button-bottom'); if(existing) return; const btn=document.createElement('button'); btn.innerText = 'Capturar Novamente'; btn.className='retry-button-bottom'; btn.style.marginTop='15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
-        async function captureAndRecognize(){ captureBtn.disabled=true; canvas.width=video.videoWidth; canvas.height=video.videoHeight; ctx.drawImage(video,0,0,canvas.width,canvas.height); video.style.display='none'; canvas.style.display='block'; controlsDiv.style.display='none'; outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_reading}</div>`; try{ const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws",{ method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ image: imageDataUrl }) }); if(!response.ok){ const err = await response.json(); throw new Error(err.error||`Erro no OCR: ${response.status}`); } const data = await response.json(); // show confirmation
-            outputPanel.innerHTML = `<div><textarea style="width:100%;min-height:120px;">${(data.text||'').trim()}</textarea><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px"><button onclick="location.reload()">Capturar Novamente</button><button onclick="alert('Enviar para correção (simulado)')">Obter Resposta</button></div></div>`;
-        } catch(err){ outputPanel.innerHTML = `<div id="status-text">Erro no OCR: ${err.message}</div>`; addRetryButton(resetUI); } }
+        const translations = {
+            "en": { "title": "AI Proof Corrector - Project by Jean Tedesqui", "capture_button": "📷 Click to Correct", "status_initial": "📷 Point the camera at the text and capture.", "status_reading": "🧠 Reading text from the image...", "status_processing": "🤖 Processing with AI...", "status_error_camera": "❌ Error accessing the camera.", "status_error_ocr": "❌ Error reading the text: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Review the extracted text and click to get the answer:</strong>", "retry_button": "Capture Again", "get_answer_button": "Get Answer", "empty_text_alert": "The text field cannot be empty.", "result_title": "✅ Result" },
+            "es": { "title": "Corrector de Pruebas con IA - Proyecto de Jean Tedesqui", "capture_button": "📷 Clic para Corregir", "status_initial": "📷 Apunta la cámara al texto y captura.", "status_reading": "🧠 Leyendo el texto de la imagen...", "status_processing": "🤖 Procesando con IA...", "status_error_camera": "❌ Error al acceder a la cámara.", "status_error_ocr": "❌ Error al leer el texto: ", "status_error_api": "❌ Error: ", "confirm_prompt": "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>", "retry_button": "Capturar de Nuevo", "get_answer_button": "Obtener Respuesta", "empty_text_alert": "El campo de texto no puede estar vacío.", "result_title": "✅ Resultado" },
+            "pt": { "title": "Correção de Prova com IA - Projeto de Jean Tedesqui", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" }
+        };
+        let currentLang = 'pt';
+
+        function setLanguage(lang) {
+            const langCode = lang.split('-')[0];
+            currentLang = translations[langCode] ? langCode : 'pt';
+            document.documentElement.lang = currentLang;
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (translations[currentLang][key]) {
+                    element.innerHTML = translations[currentLang][key];
+                }
+            });
+            const titleElement = document.querySelector('title[data-key="title"]');
+            if (titleElement) {
+                titleElement.innerText = translations[currentLang].title;
+            }
+        }
+
+        async function startCamera() { try { const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } }; const stream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject = stream; mediaTrack = stream.getVideoTracks()[0]; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; } } catch (err) { console.error("Erro ao iniciar a câmera:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_camera}</div>`; } }
+        function toggleZoom() { if (!mediaTrack) return; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; if (currentZoom > capabilities.zoom.max) currentZoom = zoomLevels[0]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
+        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text" data-key="status_initial">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
+        function addRetryButton(action) { const existing = outputPanel.querySelector('.retry-button-bottom'); if (existing) return; const btn = document.createElement('button'); btn.innerText = translations[currentLang].retry_button; btn.className = 'retry-button-bottom'; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
+        async function captureAndRecognize() { captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none'; outputPanel.innerHTML = `<div id="status-text" data-key="status_reading">${translations[currentLang].status_reading}</div>`; try { const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageDataUrl }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro no OCR: ${response.status}`); } const data = await response.json(); showConfirmationView(data.text.trim()); } catch (err) { console.error("Erro no OCR:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_ocr}${err.message}</div>`; addRetryButton(resetUI); } }
+        
+        function showConfirmationView(ocrText) {
+            const html = `<div id="confirmation-view"><p data-key="confirm_prompt">${translations[currentLang].confirm_prompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary" data-key="retry_button">${translations[currentLang].retry_button}</button><button id="sendBtn" class="confirm" data-key="get_answer_button">${translations[currentLang].get_answer_button}</button></div></div>`;
+            outputPanel.innerHTML = html;
+            document.getElementById('retryBtn').addEventListener('click', resetUI);
+            document.getElementById('sendBtn').addEventListener('click', sendForCorrection);
+        }
+        
+        async function sendForCorrection() {
+            const textToProcess = document.getElementById('text-to-process').value;
+            if (!textToProcess.trim()) { alert(translations[currentLang].empty_text_alert); return; }
+            outputPanel.innerHTML = `<div id="status-text" data-key="status_processing">${translations[currentLang].status_processing}</div>`;
+            try {
+                const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) });
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro na API: ${response.status}`); }
+                const data = await response.json();
+                outputPanel.innerHTML = `<h2 data-key="result_title">${translations[currentLang].result_title}</h2><pre id="correction-result">${data.resultado}</pre>`;
+            } catch (err) {
+                console.error("Erro na requisição:", err);
+                outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_api}${err.message}</div>`;
+            } finally {
+                addRetryButton(resetUI);
+            }
+        }
+
         zoomBtn.addEventListener('click', toggleZoom);
         captureBtn.addEventListener('click', captureAndRecognize);
-        // start
+        
+        // Inicializa a aplicação
         setLanguage(navigator.language || navigator.userLanguage);
         startCamera();
-    })();
-};
-</script>
-
+    };
+    </script>
 </body>
 </html>
