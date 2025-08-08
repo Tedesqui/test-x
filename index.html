@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Correção de Prova com IA - Projeto de Jean Tedesqui</title>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<style>
+  body, html { margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#000; color:#fff; height:100vh; }
+  #payment-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; height:100vh; text-align:center; }
+  #pay-btn { padding:14px 22px; font-size:18px; border-radius:8px; border:none; background:#28a745; color:white; cursor:pointer; }
+  #wallet_container { margin-top:10px; width:320px; max-width:90%; }
+  #main-app { display:none; height:100vh; }
+</style>
+</head>
+<body>
+<div id="payment-screen" aria-live="polite">
+  <h2>🔒 Acesso Restrito</h2>
+  <p>Para usar este site por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 4,90</strong>.</p>
+  <button id="pay-btn">💳 Pagar R$ 4,90</button>
+  <div id="wallet_container"></div>
+  <p style="font-size:0.9em;color:#ccc;margin-top:8px">Pagamento seguro — cartão, PIX e boleto.</p>
+</div>
+
+<div id="main-app" aria-hidden="true">
+<!-- INICIO DO HTML ORIGINAL (será mostrado após pagamento) -->
+<!-- Video app original -->
+<video id="video" autoplay playsinline muted></video>
+<canvas id="canvas"></canvas>
+<div id="ui-container">
+    <div id="controls">
+        <button id="zoomBtn">🔍 Zoom: 1x</button>
+        <button id="captureBtn" data-key="capture_button">📷 Clique para Corrigir</button>
+    </div>
+    <div id="output-panel">
+        <div id="status-text" data-key="status_initial">📷 Aponte a câmera para o texto e capture.</div>
+    </div>
+</div>
+<!-- FIM DO HTML ORIGINAL -->
+</div>
+
+<script>
+/*
+  INSTRUÇÕES:
+  - Substitua SUA_PUBLIC_KEY pela Public Key do Mercado Pago (Frontend).
+  - Faça deploy do backend (api/create-payment.js) na Vercel; defina MP_ACCESS_TOKEN no ambiente.
+  - Este demo usa sessionStorage para evitar que o token fique no link (proteção básica contra compartilhamento).
+  - Refresh (F5/Ctrl+R) é interceptado; fechar a aba encerra a sessão.
+*/
+
+// configurações
+const PUBLIC_KEY = "SUA_PUBLIC_KEY"; // <<< substitua antes de deploy
+const MP_SERVER_CREATE = "/api/create-payment"; // endpoint que cria a preferência
+
+// instancia MercadoPago
+const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
+
+// gerencia sessão temporária (ex.: sessionId)
+function getSessionId() {
+  let sid = sessionStorage.getItem("mp_session_id");
+  if (!sid) {
+    sid = crypto.randomUUID();
+    sessionStorage.setItem("mp_session_id", sid);
+  }
+  return sid;
+}
+
+function setAccess(expiryMillis) {
+  const data = { expiry: expiryMillis, grantedAt: Date.now() };
+  sessionStorage.setItem("accessToken", JSON.stringify(data));
+}
+
+function hasAccess() {
+  const t = sessionStorage.getItem("accessToken");
+  if (!t) return false;
+  try {
+    const obj = JSON.parse(t);
+    return Date.now() < obj.expiry;
+  } catch(e) { return false; }
+}
+
+function showMainApp() {
+  document.getElementById("payment-screen").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+  document.getElementById("main-app").ariaHidden = "false";
+  // initialize your original app (start camera etc)
+  try { window.afterPaymentUnlocked && window.afterPaymentUnlocked(); } catch(e){ console.warn(e); }
+}
+
+// prevent F5 / Ctrl+R reload
+window.addEventListener("keydown", (e) => {
+  if ((e.key === "F5") || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
+    e.preventDefault();
+    alert("Recarregamento bloqueado. Feche a aba para encerrar a sessão.");
+  }
+});
+
+// check on load
+if (hasAccess()) {
+  showMainApp();
+} else {
+  // if url has ?status=success redirect param (fallback for some flows)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("status") === "success") {
+    const expiry = Date.now() + (60 * 60 * 1000);
+    setAccess(expiry);
+    // clean url and show main
+    history.replaceState({}, "", location.pathname);
+    showMainApp();
+  }
+}
+
+// botão pagar
+document.getElementById("pay-btn").addEventListener("click", async () => {
+  const sessionId = getSessionId();
+  const res = await fetch(MP_SERVER_CREATE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId })
+  });
+  if (!res.ok) {
+    alert("Erro ao iniciar pagamento");
+    return;
+  }
+  const data = await res.json();
+  const prefId = data.preferenceId;
+
+  // render checkout inline in wallet_container
+  mp.checkout({
+    preference: { id: prefId },
+    autoOpen: true,
+    render: {
+      container: '#wallet_container',
+      label: 'Pagar R$ 4,90'
+    }
+  });
+
+  // Poll for payment approval: backend can mark session as paid (webhook) — here we poll /api/check-status
+  const checkInterval = setInterval(async () => {
+    try {
+      const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId));
+      if (r.ok) {
+        const j = await r.json();
+        if (j.paid) {
+          clearInterval(checkInterval);
+          // grant access for 1 hour
+          const expiry = Date.now() + (60 * 60 * 1000);
+          setAccess(expiry);
+          // remove wallet UI and show main app
+          document.getElementById('wallet_container').innerHTML = '';
+          showMainApp();
+        }
+      }
+    } catch(e){}
+  }, 3000);
+
+});
+
+</script>
+
+<!-- small script to initialize original app only after payment -->
+<script>
+window.afterPaymentUnlocked = function(){
+    // original HTML's JS logic — copied minimal boot to start camera and listeners
+    (function(){
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const outputPanel = document.getElementById("output-panel");
+        const controlsDiv = document.getElementById("controls");
+        const zoomBtn = document.getElementById("zoomBtn");
+        const captureBtn = document.getElementById("captureBtn");
+        let mediaTrack, currentZoom = 1;
+        const zoomLevels = [1,1.5,2,3];
+
+        const translations = {/* minimal placeholder to avoid errors */ "pt": { "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading":"🧠 Lendo o texto da imagem..." } };
+        let currentLang='pt';
+        function setLanguage(l){ currentLang='pt'; }
+        async function startCamera(){ try{ const constraints={video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}}; const stream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject=stream; mediaTrack=stream.getVideoTracks()[0]; const capabilities=mediaTrack.getCapabilities(); if(!capabilities.zoom||capabilities.zoom.max<=1){ zoomBtn.style.display='none'; } } catch(err){ outputPanel.innerHTML = '<div id="status-text">Erro ao acessar a câmera.</div>'; } }
+        function toggleZoom(){ if(!mediaTrack) return; const capabilities=mediaTrack.getCapabilities(); if(!capabilities.zoom) return; const currentIndex=zoomLevels.indexOf(currentZoom); currentZoom=zoomLevels[(currentIndex+1)%zoomLevels.length]; if(currentZoom>capabilities.zoom.max) currentZoom=zoomLevels[0]; mediaTrack.applyConstraints({ advanced:[{ zoom: currentZoom }]}); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
+        function resetUI(){ canvas.style.display='none'; video.style.display='block'; outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display='flex'; captureBtn.disabled=false; }
+        function addRetryButton(action){ const existing=outputPanel.querySelector('.retry-button-bottom'); if(existing) return; const btn=document.createElement('button'); btn.innerText = 'Capturar Novamente'; btn.className='retry-button-bottom'; btn.style.marginTop='15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
+        async function captureAndRecognize(){ captureBtn.disabled=true; canvas.width=video.videoWidth; canvas.height=video.videoHeight; ctx.drawImage(video,0,0,canvas.width,canvas.height); video.style.display='none'; canvas.style.display='block'; controlsDiv.style.display='none'; outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_reading}</div>`; try{ const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws",{ method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ image: imageDataUrl }) }); if(!response.ok){ const err = await response.json(); throw new Error(err.error||`Erro no OCR: ${response.status}`); } const data = await response.json(); // show confirmation
+            outputPanel.innerHTML = `<div><textarea style="width:100%;min-height:120px;">${(data.text||'').trim()}</textarea><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px"><button onclick="location.reload()">Capturar Novamente</button><button onclick="alert('Enviar para correção (simulado)')">Obter Resposta</button></div></div>`;
+        } catch(err){ outputPanel.innerHTML = `<div id="status-text">Erro no OCR: ${err.message}</div>`; addRetryButton(resetUI); } }
+        zoomBtn.addEventListener('click', toggleZoom);
+        captureBtn.addEventListener('click', captureAndRecognize);
+        // start
+        setLanguage(navigator.language || navigator.userLanguage);
+        startCamera();
+    })();
+};
+</script>
+
+</body>
+</html>

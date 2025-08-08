@@ -1,0 +1,11 @@
+{
+  "name": "mp-checkout-inline-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
