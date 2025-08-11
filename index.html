@@ -12,11 +12,11 @@
         p { font-size: 1.1em; line-height: 1.5; }
         #pay-btn { padding: 14px 22px; font-size: 18px; border-radius: 8px; border: none; background: #28a745; color: white; cursor: pointer; font-weight: bold; }
         #wallet_container { margin-top: 10px; width: 320px; max-width: 90%; }
+        /* Adicionado para ocultar o conteúdo enquanto verifica o acesso */
+        body.hidden { visibility: hidden; }
     </style>
 </head>
-<body>
-
-    <div class="container">
+<body class="hidden"> <div class="container">
         <h2>🔒 Acesso Restrito à Ferramenta de Correção</h2>
         <p>Para usar a ferramenta por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
         <button id="pay-btn">💳 Pagar R$ 1,00 com Mercado Pago</button>
@@ -31,49 +31,62 @@
         const APP_PAGE = "app.html"; // Nome da sua página de aplicação
 
         // --- LÓGICA DE ACESSO ---
+        function hasValidAccess() {
+            const tokenString = localStorage.getItem('accessToken');
+            if (!tokenString) return false;
+            try {
+                const token = JSON.parse(tokenString);
+                return Date.now() < token.expiry;
+            } catch (e) {
+                return false;
+            }
+        }
+
         function setAccessAndRedirect() {
             const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
             const data = { expiry: expiry, grantedAt: Date.now() };
-            // Usamos localStorage para persistir o acesso mesmo se a aba for fechada
             localStorage.setItem("accessToken", JSON.stringify(data));
-            // Redireciona para a página principal do app
             window.location.href = APP_PAGE;
         }
 
-        // --- VERIFICAÇÃO PÓS-PAGAMENTO ---
-        // Verifica se o usuário acabou de voltar de um pagamento bem-sucedido
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("payment_status") === "success") {
-            setAccessAndRedirect();
-        }
+        // --- FLUXO PRINCIPAL ---
+        // Esta é a principal correção: verifica o acesso ANTES de mostrar a página.
+        if (hasValidAccess()) {
+            window.location.href = APP_PAGE; // Se já tem acesso, vai direto para o app.
+        } else {
+            // Se não tem acesso, mostra a tela de pagamento.
+            document.body.classList.remove('hidden');
 
-        // --- LÓGICA DO BOTÃO DE PAGAMENTO ---
-        const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
-        
-        document.getElementById("pay-btn").addEventListener("click", async () => {
-            const payBtn = document.getElementById("pay-btn");
-            payBtn.disabled = true;
-            payBtn.textContent = "Aguarde...";
-
-            try {
-                const res = await fetch(MP_SERVER_CREATE, { method: "POST" });
-                if (!res.ok) throw new Error("Erro ao iniciar o processo de pagamento.");
-                
-                const data = await res.json();
-                
-                // Abre o checkout do Mercado Pago, que redirecionará automaticamente
-                mp.checkout({
-                    preference: { id: data.preferenceId },
-                    autoOpen: true,
-                    render: { container: '#wallet_container' }
-                });
-
-            } catch (error) {
-                alert(error.message);
-                payBtn.disabled = false;
-                payBtn.textContent = "💳 Pagar R$ 1,00 com Mercado Pago";
+            // E então, verifica se o usuário acabou de voltar de um pagamento bem-sucedido.
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("payment_status") === "success") {
+                setAccessAndRedirect();
             }
-        });
+
+            // --- LÓGICA DO BOTÃO DE PAGAMENTO ---
+            const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
+            
+            document.getElementById("pay-btn").addEventListener("click", async () => {
+                const payBtn = document.getElementById("pay-btn");
+                payBtn.disabled = true;
+                payBtn.textContent = "Aguarde...";
+
+                try {
+                    const res = await fetch(MP_SERVER_CREATE, { method: "POST" });
+                    if (!res.ok) throw new Error("Erro ao iniciar o processo de pagamento.");
+                    const data = await res.json();
+                    mp.checkout({
+                        preference: { id: data.preferenceId },
+                        autoOpen: true,
+                        render: { container: '#wallet_container' }
+                    });
+                } catch (error) {
+                    alert(error.message);
+                    payBtn.disabled = false;
+                    payBtn.textContent = "💳 Pagar R$ 1,00 com Mercado Pago";
+                }
+            });
+        }
     </script>
 </body>
 </html>
