@@ -1,82 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Acesso à Correção de Prova com IA</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso à Ferramenta de Correção com IA</title>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
-        /* Estilos permanecem os mesmos */
-        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; overflow: hidden; }
-        #payment-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        #pay-btn { padding: 14px 22px; font-size: 18px; border-radius: 8px; border: none; background: #28a745; color: white; cursor: pointer; font-weight: bold; }
-        #wallet_container { margin-top: 10px; width: 320px; max-width: 90%; }
+        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; }
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
         h2 { font-size: 1.8em; }
         p { font-size: 1.1em; line-height: 1.5; }
+        #pay-btn { padding: 14px 22px; font-size: 18px; border-radius: 8px; border: none; background: #28a745; color: white; cursor: pointer; font-weight: bold; }
+        #wallet_container { margin-top: 10px; width: 320px; max-width: 90%; }
     </style>
 </head>
 <body>
-    <div id="payment-screen" aria-live="polite">
-      <h2>🔒 Acesso Restrito</h2>
-      <p>Para usar a ferramenta de correção por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
-      <button id="pay-btn">💳 Pagar R$ 1,00 com Mercado Pago</button>
-      <div id="wallet_container"></div>
-      <p style="font-size:0.9em;color:#ccc;margin-top:8px">Pagamento seguro via cartão, PIX e boleto.</p>
+
+    <div class="container">
+        <h2>🔒 Acesso Restrito à Ferramenta de Correção</h2>
+        <p>Para usar a ferramenta por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
+        <button id="pay-btn">💳 Pagar R$ 1,00 com Mercado Pago</button>
+        <div id="wallet_container"></div>
+        <p style="font-size:0.9em;color:#ccc;margin-top:8px">Pagamento seguro via cartão, PIX e boleto.</p>
     </div>
-    
+
     <script>
+        // --- CONFIGURAÇÃO ---
         const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb";
         const MP_SERVER_CREATE = "/api/create-payment";
-        const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
+        const APP_PAGE = "app.html"; // Nome da sua página de aplicação
 
-        // --- FUNÇÕES DE CONTROLE DE ACESSO E SESSÃO ---
-        function getSessionId() {
-            // MUDANÇA: de sessionStorage para localStorage
-            let sid = localStorage.getItem("mp_session_id");
-            if (!sid) {
-                sid = crypto.randomUUID();
-                // MUDANÇA: de sessionStorage para localStorage
-                localStorage.setItem("mp_session_id", sid);
-            }
-            return sid;
-        }
-
-        function setAccess(expiryMillis) {
-            const data = { expiry: expiryMillis, grantedAt: Date.now() };
-            // MUDANÇA: de sessionStorage para localStorage
-            localStorage.setItem("accessToken", JSON.stringify(data));
-        }
-
-        // --- LÓGICA DE REDIRECIONAMENTO E PAGAMENTO ---
-
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("status") === "success") {
+        // --- LÓGICA DE ACESSO ---
+        function setAccessAndRedirect() {
             const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
-            setAccess(expiry);
-            history.replaceState({}, "", location.pathname); 
-            window.location.href = 'app.html';
+            const data = { expiry: expiry, grantedAt: Date.now() };
+            // Usamos localStorage para persistir o acesso mesmo se a aba for fechada
+            localStorage.setItem("accessToken", JSON.stringify(data));
+            // Redireciona para a página principal do app
+            window.location.href = APP_PAGE;
         }
 
+        // --- VERIFICAÇÃO PÓS-PAGAMENTO ---
+        // Verifica se o usuário acabou de voltar de um pagamento bem-sucedido
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("payment_status") === "success") {
+            setAccessAndRedirect();
+        }
+
+        // --- LÓGICA DO BOTÃO DE PAGAMENTO ---
+        const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
+        
         document.getElementById("pay-btn").addEventListener("click", async () => {
             const payBtn = document.getElementById("pay-btn");
             payBtn.disabled = true;
             payBtn.textContent = "Aguarde...";
 
             try {
-                const res = await fetch(MP_SERVER_CREATE, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ sessionId: getSessionId() }) 
-                });
-
+                const res = await fetch(MP_SERVER_CREATE, { method: "POST" });
                 if (!res.ok) throw new Error("Erro ao iniciar o processo de pagamento.");
                 
                 const data = await res.json();
                 
-                mp.checkout({ 
-                    preference: { id: data.preferenceId }, 
+                // Abre o checkout do Mercado Pago, que redirecionará automaticamente
+                mp.checkout({
+                    preference: { id: data.preferenceId },
                     autoOpen: true,
-                    render: { container: '#wallet_container' } 
+                    render: { container: '#wallet_container' }
                 });
 
             } catch (error) {
