@@ -6,7 +6,7 @@
     <title>Acesso à Correção de Prova com IA</title>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
-        /* Estilos apenas para a tela de pagamento */
+        /* Estilos permanecem os mesmos */
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; overflow: hidden; }
         #payment-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
         #pay-btn { padding: 14px 22px; font-size: 18px; border-radius: 8px; border: none; background: #28a745; color: white; cursor: pointer; font-weight: bold; }
@@ -46,63 +46,41 @@
 
         // --- LÓGICA DE REDIRECIONAMENTO E PAGAMENTO ---
 
-        // Tratamento para casos onde o usuário volta de um pagamento externo (ex: boleto)
+        // PASSO 1: Trata o redirecionamento automático do Mercado Pago
+        // Esta parte do código agora é a principal responsável por liberar o acesso.
         const params = new URLSearchParams(window.location.search);
         if (params.get("status") === "success") {
             const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
             setAccess(expiry);
-            history.replaceState({}, "", location.pathname); // Limpa a URL
+            history.replaceState({}, "", location.pathname); // Limpa os parâmetros da URL
             window.location.href = 'app.html'; // Redireciona para a página da aplicação
         }
 
-        // Ação ao clicar no botão de pagar
+        // PASSO 2: Ação ao clicar no botão de pagar
         document.getElementById("pay-btn").addEventListener("click", async () => {
             const payBtn = document.getElementById("pay-btn");
             payBtn.disabled = true;
             payBtn.textContent = "Aguarde...";
 
-            const sessionId = getSessionId();
             try {
                 const res = await fetch(MP_SERVER_CREATE, { 
                     method: "POST", 
                     headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ sessionId }) 
+                    body: JSON.stringify({ sessionId: getSessionId() }) 
                 });
 
                 if (!res.ok) throw new Error("Erro ao iniciar o processo de pagamento.");
                 
                 const data = await res.json();
                 
-                // Abre o checkout do Mercado Pago
+                // Abre o checkout do Mercado Pago, que irá redirecionar automaticamente
                 mp.checkout({ 
                     preference: { id: data.preferenceId }, 
                     autoOpen: true,
                     render: { container: '#wallet_container' } 
                 });
 
-                // Inicia a verificação de status em segundo plano
-                const checkInterval = setInterval(async () => {
-                    try {
-                        const r = await fetch('/api/check-status?sessionId=' + encodeURIComponent(sessionId));
-                        if (r.ok) {
-                            const j = await r.json();
-                            if (j.paid) {
-                                clearInterval(checkInterval);
-                                const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
-                                
-                                // PASSO 1: Salva o token de acesso na sessão
-                                setAccess(expiry);
-                                
-                                // PASSO 2: Redireciona para a página da aplicação
-                                window.location.href = 'app.html';
-                            }
-                        }
-                    } catch (e) { 
-                        console.error("Erro na verificação de status:", e); 
-                        // Opcional: para o loop se houver erro de rede contínuo
-                        // clearInterval(checkInterval);
-                    }
-                }, 3000); // Verifica a cada 3 segundos
+                // NÃO HÁ MAIS "setInterval". A verificação foi removida.
 
             } catch (error) {
                 alert(error.message);
