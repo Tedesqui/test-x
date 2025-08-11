@@ -31,32 +31,32 @@
 
         // --- FUNÇÕES DE CONTROLE DE ACESSO E SESSÃO ---
         function getSessionId() {
-            let sid = sessionStorage.getItem("mp_session_id");
+            // MUDANÇA: de sessionStorage para localStorage
+            let sid = localStorage.getItem("mp_session_id");
             if (!sid) {
                 sid = crypto.randomUUID();
-                sessionStorage.setItem("mp_session_id", sid);
+                // MUDANÇA: de sessionStorage para localStorage
+                localStorage.setItem("mp_session_id", sid);
             }
             return sid;
         }
 
         function setAccess(expiryMillis) {
             const data = { expiry: expiryMillis, grantedAt: Date.now() };
-            sessionStorage.setItem("accessToken", JSON.stringify(data));
+            // MUDANÇA: de sessionStorage para localStorage
+            localStorage.setItem("accessToken", JSON.stringify(data));
         }
 
         // --- LÓGICA DE REDIRECIONAMENTO E PAGAMENTO ---
 
-        // PASSO 1: Trata o redirecionamento automático do Mercado Pago
-        // Esta parte do código agora é a principal responsável por liberar o acesso.
         const params = new URLSearchParams(window.location.search);
         if (params.get("status") === "success") {
             const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
             setAccess(expiry);
-            history.replaceState({}, "", location.pathname); // Limpa os parâmetros da URL
-            window.location.href = 'app.html'; // Redireciona para a página da aplicação
+            history.replaceState({}, "", location.pathname); 
+            window.location.href = 'app.html';
         }
 
-        // PASSO 2: Ação ao clicar no botão de pagar
         document.getElementById("pay-btn").addEventListener("click", async () => {
             const payBtn = document.getElementById("pay-btn");
             payBtn.disabled = true;
@@ -73,14 +73,11 @@
                 
                 const data = await res.json();
                 
-                // Abre o checkout do Mercado Pago, que irá redirecionar automaticamente
                 mp.checkout({ 
                     preference: { id: data.preferenceId }, 
                     autoOpen: true,
                     render: { container: '#wallet_container' } 
                 });
-
-                // NÃO HÁ MAIS "setInterval". A verificação foi removida.
 
             } catch (error) {
                 alert(error.message);
