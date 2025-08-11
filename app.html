@@ -22,6 +22,21 @@
         #confirmation-controls button.confirm { background-color: #28a745; }
         #confirmation-controls button.secondary { background-color: #6c757d; }
         pre#correction-result { background-color: #2a2a2a; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+        
+        /* ===== ESTILOS PARA O CONTADOR DE TEMPO (NOVO) ===== */
+        #access-timer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            z-index: 10;
+            border: 1px solid #444;
+        }
     </style>
 </head>
 <body>
@@ -30,14 +45,14 @@
         (function checkAccess() {
             const tokenString = localStorage.getItem('accessToken');
             if (!tokenString) {
-                window.location.href = 'index.html'; // Se não há token, volta para o pagamento
+                window.location.href = 'index.html';
                 return;
             }
             const token = JSON.parse(tokenString);
             if (Date.now() > token.expiry) {
                 localStorage.removeItem('accessToken');
                 alert('Sua sessão de 1 hora expirou. Por favor, pague novamente.');
-                window.location.href = 'index.html'; // Se expirou, volta para o pagamento
+                window.location.href = 'index.html';
             }
         })();
     </script>
@@ -55,8 +70,44 @@
             </div>
         </div>
     </div>
+
+    <div id="access-timer">
+        Tempo Restante: <span id="time-left">--:--</span>
+    </div>
     
     <script>
+        // --- LÓGICA DO CONTADOR DE TEMPO (NOVO) ---
+        const timerDisplay = document.getElementById('time-left');
+        const tokenData = JSON.parse(localStorage.getItem('accessToken'));
+
+        if (tokenData && timerDisplay) {
+            const expiryTime = tokenData.expiry;
+
+            const updateTimer = () => {
+                const timeLeft = expiryTime - Date.now();
+
+                if (timeLeft <= 0) {
+                    timerDisplay.textContent = 'Expirado';
+                    clearInterval(timerInterval);
+                    // Força o guardião a rodar de novo para redirecionar o usuário
+                    window.location.reload(); 
+                    return;
+                }
+                
+                const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
+                const seconds = Math.floor((timeLeft / 1000) % 60);
+
+                // Formata para sempre ter dois dígitos (ex: 05:09)
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            };
+
+            // Atualiza o contador a cada segundo
+            const timerInterval = setInterval(updateTimer, 1000);
+            // Chama uma vez imediatamente para não esperar 1 segundo para aparecer
+            updateTimer();
+        }
+
+        // --- LÓGICA DA APLICAÇÃO (sem alterações) ---
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -72,24 +123,17 @@
         async function startCamera() {
             try {
                 const constraints = { video: { facingMode: { ideal: "environment" } } };
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error("A API de mídia não é suportada neste navegador.");
-                }
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { throw new Error("A API de mídia não é suportada neste navegador."); }
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 mediaTrack = stream.getVideoTracks()[0];
                 const capabilities = mediaTrack.getCapabilities();
-                if (!capabilities.zoom || capabilities.zoom.max <= 1) {
-                    zoomBtn.style.display = 'none';
-                }
+                if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; }
             } catch (err) {
                 console.error("Erro ao iniciar a câmera:", err.name, err.message);
                 let userMessage = translations.pt.status_error_camera || "Erro ao acessar a câmera.";
-                if (err.name === "NotAllowedError") {
-                    userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>";
-                } else {
-                     userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`;
-                }
+                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>"; }
+                else { userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`; }
                 outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
             }
         }
