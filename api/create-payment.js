@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       ],
       // ✅ ADICIONADO: ID da sua conta de vendedor.
       // Substitua o placeholder abaixo pelo seu número real.
-      collector_id: DGBDCHEFA55037,
+      collector_id: 2610700247,
 
       // ✅ ADICIONADO: URLs para redirecionar o cliente após o pagamento.
       // Altere 'https://seusite.com.br' para o seu domínio real.
