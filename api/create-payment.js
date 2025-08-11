@@ -1,51 +1,62 @@
-// Arquivo: /api/create-payment.js
-
+// Importa o SDK do Mercado Pago
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-export default async function handler(req, res) {
-  // 1. Inicialize o cliente do Mercado Pago com seu Access Token de Produção
-  //    (Certifique-se que a variável de ambiente MP_ACCESS_TOKEN está configurada no seu servidor)
-  const client = new MercadoPagoConfig({ 
-    accessToken: process.env.MP_ACCESS_TOKEN 
-  });
-  const preference = new Preference(client);
+// Handler da Vercel Serverless Function
+export default async function handler(request, response) {
+  // Garante que o método da requisição seja POST
+  if (request.method !== 'POST') {
+    return response.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // Pega o seu Access Token das Váriaveis de Ambiente da Vercel (mais seguro)
+  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  if (!accessToken) {
+    console.error("Access Token do Mercado Pago não encontrado.");
+    return response.status(500).json({ error: 'Erro de configuração no servidor.' });
+  }
+
+  // Inicializa o cliente do Mercado Pago
+  const client = new MercadoPagoConfig({ accessToken: accessToken });
+  const preferenceClient = new Preference(client);
 
   try {
-    const body = {
+    // Corpo da preferência de pagamento com os dados do produto e URLs de retorno
+    const preferenceData = {
       items: [
         {
-          id: 'access-time-1h',
-          title: 'Acesso de 1 hora ao App de Correção',
+          id: 'correcao-ia-1h',
+          title: 'Acesso por 1 hora à Correção de Prova com IA',
+          description: 'Acesso à ferramenta de correção por inteligência artificial durante 60 minutos.',
           quantity: 1,
-          unit_price: 1.00, // O valor está correto (R$ 1,00)
-          currency_id: 'BRL'
-        }
+          currency_id: 'BRL', // Moeda Real Brasileiro
+          unit_price: 1.00,
+        },
       ],
-      // ✅ ADICIONADO: ID da sua conta de vendedor.
-      // Substitua o placeholder abaixo pelo seu número real.
-      collector_id: 2610700247,
-
-      // ✅ ADICIONADO: URLs para redirecionar o cliente após o pagamento.
-      // Altere 'https://seusite.com.br' para o seu domínio real.
+      // URLs para onde o usuário será redirecionado após o pagamento
       back_urls: {
-        success: 'https://https://prova-projeto.vercel.app/index.html?status=success', // Leva para a página do app
-        failure: 'https://prova-projeto.vercel.app/index.html?status=failure', // Leva de volta para o pagamento
-        pending: 'https://prova-projeto.vercel.app/index.html?status=pending'  // Leva de volta para o pagamento
+        success: 'https://prova-projeto.vercel.app/?status=success',
+        failure: 'https://prova-projeto.vercel.app/?status=failure',
+        pending: 'https://prova-projeto.vercel.app/?status=pending',
       },
-      auto_return: 'approved', // Redireciona automaticamente em caso de sucesso.
-
-      // ✅ RECOMENDADO: URL para notificações do servidor (Webhook/IPN).
-      // Isso permite que o Mercado Pago avise seu servidor sobre mudanças de status.
-      // notification_url: 'https://seusite.com.br/api/webhook'
+      // Redireciona automaticamente para a URL de sucesso após a aprovação
+      auto_return: 'approved',
     };
 
-    const result = await preference.create({ body });
-    
+    console.log("Criando preferência com os dados:", preferenceData);
+
+    // Cria a preferência de pagamento
+    const result = await preferenceClient.create({ body: preferenceData });
+
+    console.log("Preferência criada com sucesso. ID:", result.id);
+
     // Retorna o ID da preferência para o frontend
-    res.status(200).json({ preferenceId: result.id });
+    return response.status(201).json({ preferenceId: result.id });
 
   } catch (error) {
-    console.error('Erro ao criar preferência de pagamento:', error);
-    res.status(500).json({ error: 'Falha ao criar preferência de pagamento.' });
+    console.error("Erro ao criar preferência no Mercado Pago:", error);
+    return response.status(500).json({ 
+        error: 'Falha ao comunicar com o Mercado Pago.',
+        details: error.message 
+    });
   }
 }
