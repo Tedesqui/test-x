@@ -12,11 +12,12 @@
         p { font-size: 1.1em; line-height: 1.5; }
         #pay-btn { padding: 14px 22px; font-size: 18px; border-radius: 8px; border: none; background: #28a745; color: white; cursor: pointer; font-weight: bold; }
         #wallet_container { margin-top: 10px; width: 320px; max-width: 90%; }
-        /* Adicionado para ocultar o conteúdo enquanto verifica o acesso */
         body.hidden { visibility: hidden; }
     </style>
 </head>
-<body class="hidden"> <div class="container">
+<body class="hidden">
+
+    <div class="container">
         <h2>🔒 Acesso Restrito à Ferramenta de Correção</h2>
         <p>Para usar a ferramenta por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
         <button id="pay-btn">💳 Pagar R$ 1,00 com Mercado Pago</button>
@@ -25,45 +26,47 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO ---
         const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb";
         const MP_SERVER_CREATE = "/api/create-payment";
-        const APP_PAGE = "app.html"; // Nome da sua página de aplicação
+        const APP_PAGE = "app.html";
 
-        // --- LÓGICA DE ACESSO ---
+        // ===== LÓGICA DE ACESSO ATUALIZADA =====
+        function getSessionId() {
+            let sid = localStorage.getItem("mp_session_id");
+            if (!sid) {
+                sid = crypto.randomUUID();
+                localStorage.setItem("mp_session_id", sid);
+            }
+            return sid;
+        }
+
         function hasValidAccess() {
             const tokenString = localStorage.getItem('accessToken');
             if (!tokenString) return false;
             try {
                 const token = JSON.parse(tokenString);
                 return Date.now() < token.expiry;
-            } catch (e) {
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
         function setAccessAndRedirect() {
-            const expiry = Date.now() + (60 * 60 * 1000); // 1 hora de acesso
+            const expiry = Date.now() + (60 * 60 * 1000);
             const data = { expiry: expiry, grantedAt: Date.now() };
             localStorage.setItem("accessToken", JSON.stringify(data));
             window.location.href = APP_PAGE;
         }
 
         // --- FLUXO PRINCIPAL ---
-        // Esta é a principal correção: verifica o acesso ANTES de mostrar a página.
         if (hasValidAccess()) {
-            window.location.href = APP_PAGE; // Se já tem acesso, vai direto para o app.
+            window.location.href = APP_PAGE;
         } else {
-            // Se não tem acesso, mostra a tela de pagamento.
             document.body.classList.remove('hidden');
 
-            // E então, verifica se o usuário acabou de voltar de um pagamento bem-sucedido.
             const params = new URLSearchParams(window.location.search);
             if (params.get("payment_status") === "success") {
                 setAccessAndRedirect();
             }
 
-            // --- LÓGICA DO BOTÃO DE PAGAMENTO ---
             const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
             
             document.getElementById("pay-btn").addEventListener("click", async () => {
@@ -71,15 +74,52 @@
                 payBtn.disabled = true;
                 payBtn.textContent = "Aguarde...";
 
+                const sessionId = getSessionId();
+
                 try {
-                    const res = await fetch(MP_SERVER_CREATE, { method: "POST" });
+                    const res = await fetch(MP_SERVER_CREATE, { 
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sessionId }) // Envia a sessionId
+                    });
+
                     if (!res.ok) throw new Error("Erro ao iniciar o processo de pagamento.");
+                    
                     const data = await res.json();
+                    
                     mp.checkout({
                         preference: { id: data.preferenceId },
                         autoOpen: true,
                         render: { container: '#wallet_container' }
                     });
+
+                    // ===== VERIFICAÇÃO EM PARALELO (PARA PIX) =====
+                    let checkCount = 0;
+                    const maxChecks = 50; // Para por segurança após ~3 minutos
+                    const checkInterval = setInterval(async () => {
+                        checkCount++;
+                        if (document.getElementById('wallet_container').offsetParent === null || checkCount > maxChecks) {
+                           clearInterval(checkInterval);
+                           payBtn.disabled = false;
+                           payBtn.textContent = "💳 Pagar R$ 1,00 com Mercado Pago";
+                           return;
+                        }
+
+                        try {
+                           const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
+                           if (r.ok) {
+                               const j = await r.json();
+                               if (j.paid) {
+                                   clearInterval(checkInterval);
+                                   setAccessAndRedirect();
+                               }
+                           }
+                        } catch (e) {
+                           console.error("Erro na verificação de status:", e);
+                           clearInterval(checkInterval); // Para em caso de erro de rede
+                        }
+                    }, 4000); // Verifica a cada 4 segundos
+
                 } catch (error) {
                     alert(error.message);
                     payBtn.disabled = false;
