@@ -93,30 +93,30 @@
                         render: { container: '#wallet_container' }
                     });
 
-                    // ===== VERIFICAÇÃO EM PARALELO (PARA PIX) =====
+                    // ===== VERIFICAÇÃO EM PARALELO (PARA PIX) - CORRIGIDO =====
                     let checkCount = 0;
-                    const maxChecks = 50; // Para por segurança após ~3 minutos
+                    const maxChecks = 900; // ✅ CORRIGIDO: Para por segurança após 60 minutos
                     const checkInterval = setInterval(async () => {
                         checkCount++;
                         if (document.getElementById('wallet_container').offsetParent === null || checkCount > maxChecks) {
-                           clearInterval(checkInterval);
-                           payBtn.disabled = false;
-                           payBtn.textContent = "💳 Pagar R$ 1,00 com Mercado Pago";
-                           return;
+                            clearInterval(checkInterval);
+                            payBtn.disabled = false;
+                            payBtn.textContent = "💳 Pagar R$ 1,00 com Mercado Pago";
+                            return;
                         }
 
                         try {
-                           const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
-                           if (r.ok) {
-                               const j = await r.json();
-                               if (j.paid) {
-                                   clearInterval(checkInterval);
-                                   setAccessAndRedirect();
-                               }
-                           }
+                            const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
+                            if (r.ok) {
+                                const j = await r.json();
+                                if (j.paid) {
+                                    clearInterval(checkInterval);
+                                    setAccessAndRedirect();
+                                }
+                            }
                         } catch (e) {
-                           console.error("Erro na verificação de status:", e);
-                           clearInterval(checkInterval); // Para em caso de erro de rede
+                            console.error("Erro na verificação de status:", e);
+                            clearInterval(checkInterval); // Para em caso de erro de rede
                         }
                     }, 4000); // Verifica a cada 4 segundos
 
