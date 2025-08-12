@@ -5,7 +5,7 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { sessionId } = request.body; // Recebemos a sessionId do frontend
+  const { sessionId } = request.body;
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
   if (!accessToken || !sessionId) {
@@ -16,6 +16,12 @@ export default async function handler(request, response) {
   const preference = new Preference(client);
 
   try {
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Calcula a data de expiração para daqui a 1 hora
+    const expirationDate = new Date();
+    expirationDate.setHours(expirationDate.getHours() + 1);
+    // --- FIM DA ALTERAÇÃO ---
+
     const result = await preference.create({
       body: {
         items: [{
@@ -31,9 +37,11 @@ export default async function handler(request, response) {
             pending: `https://prova-projeto.vercel.app/index.html?payment_status=pending`,
         },
         auto_return: 'approved',
-        // ===== ADIÇÃO IMPORTANTE AQUI =====
-        // Vincula este pagamento à sessão do navegador do usuário
         external_reference: sessionId,
+        
+        // --- ADIÇÃO DA DATA DE EXPIRAÇÃO ---
+        // Define que a preferência (e o PIX gerado) expira em 1 hora
+        date_of_expiration: expirationDate.toISOString(),
       }
     });
     
