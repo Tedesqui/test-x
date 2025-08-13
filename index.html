@@ -3,195 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento - Acesso à Ferramenta</title>
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <title>Acesso à Ferramenta de Correção com IA</title>
     <style>
-        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; }
+        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        h2 { font-size: 1.8em; margin-bottom: 8px; }
-        p { font-size: 1.1em; line-height: 1.5; max-width: 450px; }
-        body.hidden { visibility: hidden; }
-
-        .payment-choice-container { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; margin-top: 20px; }
-        .choice-btn { background-color: #333; color: white; border: 1px solid #555; border-radius: 8px; padding: 18px; font-size: 1.1em; cursor: pointer; text-align: left; font-weight: bold; }
-        .choice-btn:hover { background-color: #444; }
-
-        .payment-area { display: none; width: 100%; max-width: 400px; margin-top: 15px; }
         
-        #feedback-container { font-size: 1em; color: #ccc; margin-top: 25px; height: 20px; transition: color 0.3s; }
-        .error-message { color: #ff9999; font-size: 0.9em; padding: 15px; border: 1px solid #555; border-radius: 4px; line-height: 1.4; text-align: left; }
-        .back-btn { background: none; border: none; color: #009ee3; cursor: pointer; margin-top: 20px; font-size: 0.9em; }
+        /* Estilos do View de Pagamento Inicial */
+        #payment-view h2 { font-size: 1.8em; margin-bottom: 8px; }
+        #payment-view p { font-size: 1.1em; line-height: 1.5; max-width: 400px; }
+        #pay-btn { margin-top: 20px; padding: 16px 25px; font-size: 18px; border-radius: 8px; border: none; background: #009ee3; color: white; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+        #pay-btn:disabled { background: #555; cursor: wait; }
+        #pay-btn:hover:not(:disabled) { background: #0089cc; }
+        
+        /* Estilos do View do PIX (aparece após clicar) */
+        #pix-view { display: none; flex-direction: column; align-items: center; gap: 15px; background: #1e1e1e; padding: 25px; border-radius: 12px; max-width: 350px; border: 1px solid #333; }
+        #pix-view h3 { margin: 0; font-size: 1.3em; }
+        #qr-code-img { border: 6px solid white; border-radius: 8px; }
+        #pix-copy-paste { font-family: 'Courier New', Courier, monospace; background: #2a2a2a; padding: 12px; border: 1px dashed #555; border-radius: 6px; word-break: break-all; font-size: 0.9em; cursor: pointer; position: relative; }
+        #pix-copy-paste::after { content: 'Copiado!'; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #28a745; padding: 4px 8px; border-radius: 4px; font-family: sans-serif; font-size: 0.8em; opacity: 0; transition: opacity 0.3s; }
+        #pix-copy-paste.copied::after { opacity: 1; }
+        #pix-status { font-size: 1em; color: #ffc107; }
 
-        .pix-form-input { width: 100%; padding: 12px; background-color: #222; border: 1px solid #555; color: white; border-radius: 6px; margin-bottom: 10px; }
-        .pix-form-button { width: 100%; padding: 12px; background-color: #009ee3; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .pix-form-button:hover { background-color: #00b1ff; }
-        .pix-form-button:disabled { background-color: #555; cursor: not-allowed; }
+        body.hidden { display: none; }
     </style>
 </head>
 <body class="hidden">
 
     <div class="container">
-        <h2>🔒 Acesso Restrito à Ferramenta de Correção</h2>
-        <p>Para usar a ferramenta por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
-
-        <div id="payment-choice-container" class="payment-choice-container">
-            <button id="show-card-btn" class="choice-btn">💳 Pagar com Cartão de Crédito</button>
-            <button id="show-pix-btn" class="choice-btn">✨ Pagar com Pix</button>
+        <div id="payment-view">
+            <h2>🔒 Acesso Restrito à Ferramenta</h2>
+            <p>Para utilizar a correção por IA durante <strong>1 hora</strong>, realize o pagamento único de <strong>R$ 1,00</strong> via PIX.</p>
+            <button id="pay-btn">Pagar R$ 1,00 com PIX</button>
+            <p style="font-size:0.8em;color:#888;margin-top:20px">Pagamento seguro processado pelo Mercado Pago.</p>
         </div>
 
-        <div id="card-payment-area" class="payment-area">
-            <div id="card-payment-container"></div>
-            <button class="back-btn">← Escolher outra forma de pagamento</button>
+        <div id="pix-view">
+            <h3>Pague com PIX para liberar o acesso</h3>
+            <img id="qr-code-img" src="" alt="QR Code PIX">
+            <p>Clique no código abaixo para copiar:</p>
+            <div id="pix-copy-paste" title="Clique para copiar"></div>
+            <p id="pix-status">Aguardando pagamento...</p>
         </div>
-
-        <div id="pix-payment-area" class="payment-area">
-            <form id="pix-email-form">
-                <p class="text-sm mb-2">Informe seu e-mail para gerar o QR Code:</p>
-                <input type="email" id="pix-payer-email" placeholder="seu.email@exemplo.com" required class="pix-form-input">
-                <button type="submit" id="generate-pix-code-btn" class="pix-form-button">Gerar QR Code PIX</button>
-            </form>
-            <div id="pix-brick-container"></div>
-            <button class="back-btn">← Escolher outra forma de pagamento</button>
-        </div>
-        
-        <div id="feedback-container"></div>
     </div>
 
     <script>
-        const PUBLIC_KEY = "COLE_SUA_PUBLIC_KEY_DE_PRODUÇÃO_AQUI";
         const MP_SERVER_CREATE = "/api/create-payment";
-        const MP_SERVER_CHECK_STATUS = "/api/check-status";
         const APP_PAGE = "app.html";
 
-        const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
-        
-        // --- Seletores de Elementos ---
-        const feedbackContainer = document.getElementById('feedback-container');
-        const choiceContainer = document.getElementById('payment-choice-container');
-        const cardArea = document.getElementById('card-payment-area');
-        const pixArea = document.getElementById('pix-payment-area');
-        const pixEmailForm = document.getElementById('pix-email-form');
-        const pixPayerEmailInput = document.getElementById('pix-payer-email');
-        const generatePixCodeBtn = document.getElementById('generate-pix-code-btn');
-        const pixBrickContainer = document.getElementById('pix-brick-container');
-        
-        let paymentCheckInterval;
-
-        function handlePaymentSuccess() {
-            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-            feedbackContainer.style.color = '#28a745';
-            feedbackContainer.textContent = "✅ Pagamento aprovado! Redirecionando...";
-            
-            // Cria o token de acesso e redireciona
-            const expiry = Date.now() + 3600 * 1000; // 1 hora de acesso
-            localStorage.setItem("accessToken", JSON.stringify({ expiry, grantedAt: Date.now() }));
-            setTimeout(() => window.location.href = APP_PAGE, 1500);
+        // ===== LÓGICA DE ACESSO =====
+        function getSessionId() {
+            let sid = localStorage.getItem("mp_session_id");
+            if (!sid || sid.length < 10) { // Garante que o ID não seja inválido/curto
+                sid = crypto.randomUUID();
+                localStorage.setItem("mp_session_id", sid);
+            }
+            return sid;
         }
 
-        // A função de verificação agora recebe um ID de tentativa de pagamento
-        function startPaymentStatusCheck(paymentAttemptId) {
-            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-            paymentCheckInterval = setInterval(async () => {
-                try {
-                    // Envia o ID da tentativa para o backend
-                    const r = await fetch(`${MP_SERVER_CHECK_STATUS}?paymentAttemptId=${paymentAttemptId}`);
-                    if (r.ok) {
-                        const j = await r.json();
-                        if (j.paid) handlePaymentSuccess();
-                    }
-                } catch (e) { console.error("Polling Error:", e); clearInterval(paymentCheckInterval); }
-            }, 4000);
-        }
-
-        function renderPixBrick(preferenceId) {
-            pixBrickContainer.innerHTML = '';
-            pixEmailForm.style.display = 'none';
-
-            return new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(() => reject(new Error("A geração do QR Code demorou demais.")), 12000);
-                mp.bricks().create('payment', 'pix-brick-container', {
-                    initialization: { amount: 1.00, preferenceId: preferenceId },
-                    customization: { paymentMethods: { ticket: "all", bankTransfer: "all", creditCard: [], debitCard: [], mercadoPago: [] }, visual: { style: { theme: 'dark' } } },
-                    callbacks: {
-                        onReady: () => { clearTimeout(timeoutId); resolve(); },
-                        onError: (error) => { clearTimeout(timeoutId); reject(error); }
-                    },
-                });
-            });
-        }
-        
-        function showPaymentArea(areaToShow) {
-            choiceContainer.style.display = 'none';
-            cardArea.style.display = areaToShow === 'card' ? 'block' : 'none';
-            pixArea.style.display = areaToShow === 'pix' ? 'block' : 'none';
-        }
-
-        function showChoiceArea() {
-            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-            feedbackContainer.textContent = '';
-            choiceContainer.style.display = 'flex';
-            cardArea.style.display = 'none';
-            pixArea.style.display = 'none';
-            pixEmailForm.style.display = 'block';
-            pixBrickContainer.innerHTML = '';
-        }
-
-        function main() {
-            // Limpa o localStorage de sessões antigas para evitar o problema
-            localStorage.removeItem("mp_session_id");
-
+        function hasValidAccess() {
+            const tokenString = localStorage.getItem('accessToken');
+            if (!tokenString) return false;
             try {
-                const accessToken = localStorage.getItem('accessToken');
-                if (accessToken && Date.now() < JSON.parse(accessToken).expiry) {
-                    window.location.href = APP_PAGE; return;
-                }
-            } catch (e) { /* ignora */ }
+                const token = JSON.parse(tokenString);
+                return Date.now() < token.expiry;
+            } catch (e) { return false; }
+        }
+
+        function setAccessAndRedirect() {
+            const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
+            localStorage.setItem("accessToken", JSON.stringify({ expiry }));
+            window.location.href = APP_PAGE;
+        }
+
+        // ===== FLUXO DA PÁGINA =====
+        if (hasValidAccess()) {
+            window.location.href = APP_PAGE;
+        } else {
             document.body.classList.remove('hidden');
 
-            document.getElementById('show-card-btn').addEventListener('click', () => { alert("Opção em manutenção. Use o PIX."); });
+            const payBtn = document.getElementById("pay-btn");
+            const paymentView = document.getElementById("payment-view");
+            const pixView = document.getElementById("pix-view");
+            const qrCodeImg = document.getElementById("qr-code-img");
+            const pixCopyPaste = document.getElementById("pix-copy-paste");
 
-            // Lógica do formulário PIX
-            pixEmailForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                generatePixCodeBtn.disabled = true;
-                feedbackContainer.textContent = "Gerando QR Code, aguarde...";
-                
+            // Evento para copiar o código PIX
+            pixCopyPaste.addEventListener('click', () => {
+                navigator.clipboard.writeText(pixCopyPaste.textContent);
+                pixCopyPaste.classList.add('copied');
+                setTimeout(() => pixCopyPaste.classList.remove('copied'), 2000);
+            });
+
+            // Evento principal para iniciar o pagamento
+            payBtn.addEventListener("click", async () => {
+                payBtn.disabled = true;
+                payBtn.textContent = "Gerando PIX...";
+
+                const sessionId = getSessionId();
+
                 try {
-                    // GERA UM ID NOVO E ÚNICO PARA CADA TENTATIVA
-                    const paymentAttemptId = crypto.randomUUID();
-                    const payerEmail = pixPayerEmailInput.value;
-
                     const res = await fetch(MP_SERVER_CREATE, { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json" }, 
-                        body: JSON.stringify({ paymentAttemptId, payerEmail }) // Envia o novo ID
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sessionId })
                     });
-                    
+
                     if (!res.ok) {
-                        const errData = await res.json();
-                        throw new Error(errData.message || 'Seu servidor respondeu com um erro.');
+                        const err = await res.json();
+                        throw new Error(err.error || "Erro ao iniciar o processo de pagamento.");
                     }
                     
                     const data = await res.json();
-                    if (!data.preferenceId) throw new Error("A resposta do servidor não contém um 'preferenceId'.");
-
-                    await renderPixBrick(data.preferenceId);
                     
-                    feedbackContainer.textContent = "Escaneie o QR Code para pagar.";
-                    startPaymentStatusCheck(paymentAttemptId);
+                    // Preenche os dados do PIX na tela
+                    qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
+                    pixCopyPaste.textContent = data.qrCode;
+
+                    // Esconde a view inicial e mostra a view do PIX
+                    paymentView.style.display = 'none';
+                    pixView.style.display = 'flex';
+
+                    // Inicia a verificação de status em segundo plano
+                    const checkInterval = setInterval(async () => {
+                        try {
+                            const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
+                            if (r.ok) {
+                                const j = await r.json();
+                                if (j.paid) {
+                                    clearInterval(checkInterval);
+                                    setAccessAndRedirect();
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Erro na verificação de status:", e);
+                            clearInterval(checkInterval); 
+                        }
+                    }, 4000); // Verifica a cada 4 segundos
 
                 } catch (error) {
-                    console.error("Falha ao iniciar Pix:", error);
-                    feedbackContainer.style.color = '#ff9999';
-                    feedbackContainer.textContent = error.message;
-                    generatePixCodeBtn.disabled = false;
+                    alert(error.message);
+                    payBtn.disabled = false;
+                    payBtn.textContent = "Pagar R$ 1,00 com PIX";
                 }
             });
-
-            document.querySelectorAll('.back-btn').forEach(btn => btn.addEventListener('click', showChoiceArea));
         }
-
-        main();
     </script>
 </body>
 </html>
