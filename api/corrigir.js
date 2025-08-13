@@ -18,15 +18,16 @@ export default async function handler(req, res) {
         
         const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-        // Mapeamento de idiomas para instruções claras para a IA
+        // Mapeamento de idiomas completo
         const languageMap = {
-            'en': 'English',
-            'es': 'Spanish',
-            'pt': 'Brazilian Portuguese'
+            'en': 'English', 'es': 'Spanish', 'pt': 'Brazilian Portuguese',
+            'zh': 'Mandarin Chinese', 'ja': 'Japanese', 'ko': 'Korean',
+            'it': 'Italian', 'de': 'German', 'fr': 'French', 'ru': 'Russian'
         };
         
-        // Define o idioma da resposta, com 'pt' como padrão
         const targetLanguage = languageMap[language] || languageMap['pt'];
+
+        // --- INÍCIO DA ALTERAÇÃO ---
 
         const systemPrompt = `
             Você é um assistente de IA altamente inteligente e versátil. Sua principal função é analisar o texto do usuário e determinar a tarefa implícita para fornecer uma resposta direta e precisa.
@@ -36,9 +37,12 @@ export default async function handler(req, res) {
             2.  **Se o texto for uma pergunta direta (ex: "Qual é a capital do Japão?"),** responda à pergunta de forma completa e precisa.
             3.  **Se o texto for uma afirmação a ser verificada (ex: "O sol gira em torno da Terra."),** analise sua veracidade, corrija-a se estiver incorreta e forneça uma breve explicação.
             4.  **Se o texto for uma frase para completar,** complete-a de forma lógica e coerente.
+            5.  **Se o texto for uma questão com opções de múltipla escolha (ex: com alternativas A, B, C, D),** primeiro, forneça a resolução ou a resposta correta e, em seguida, indique claramente qual é a opção correta. Exemplo: "A resposta correta é 81, que corresponde à opção C)".
 
-            Sempre priorize a resposta mais direta e útil para a tarefa que você identificou.
+            IMPORTANTE: Sua resposta DEVE ser estritamente no idioma: ${targetLanguage}.
         `;
+
+        // --- FIM DA ALTERAÇÃO ---
 
         const payload = {
             model: "gpt-4o",
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: texto }
             ],
-            temperature: 0.3, // Mais preciso para correções
+            temperature: 0.3,
             max_tokens: 1000
         };
 
