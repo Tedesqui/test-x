@@ -20,7 +20,7 @@
         .payment-area { display: none; width: 100%; max-width: 400px; margin-top: 15px; }
         
         #feedback-container { font-size: 1em; color: #ccc; margin-top: 25px; height: 20px; transition: color 0.3s; }
-        .error-message { color: #ff9999; font-size: 0.9em; padding: 10px; border: 1px solid #555; border-radius: 4px; }
+        .error-message { color: #ff9999; font-size: 0.9em; padding: 15px; border: 1px solid #555; border-radius: 4px; line-height: 1.4; }
         .back-btn { background: none; border: none; color: #009ee3; cursor: pointer; margin-top: 20px; font-size: 0.9em; }
     </style>
 </head>
@@ -37,12 +37,12 @@
 
         <div id="card-payment-area" class="payment-area">
             <div id="card-payment-container"></div>
-            <button class="back-btn" data-target="card">← Escolher outra forma de pagamento</button>
+            <button class="back-btn">← Escolher outra forma de pagamento</button>
         </div>
 
         <div id="pix-payment-area" class="payment-area">
             <div id="pix-payment-container"></div>
-            <button class="back-btn" data-target="pix">← Escolher outra forma de pagamento</button>
+            <button class="back-btn">← Escolher outra forma de pagamento</button>
         </div>
         
         <div id="feedback-container"></div>
@@ -55,7 +55,6 @@
         const MP_SERVER_CHECK_STATUS = "/api/check-status";
         const APP_PAGE = "app.html";
 
-        // Funções de acesso e sessão (sem alterações)
         function getSessionId() {
             let sid = localStorage.getItem("mp_session_id");
             if (!sid) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); }
@@ -75,20 +74,18 @@
         const mp = new MercadoPago(PUBLIC_KEY, { locale: 'pt-BR' });
         const bricks = mp.bricks();
         const feedbackContainer = document.getElementById('feedback-container');
-        let pixStatusInterval;
-
         const choiceContainer = document.getElementById('payment-choice-container');
         const cardArea = document.getElementById('card-payment-area');
         const pixArea = document.getElementById('pix-payment-area');
         
-        let isCardRendered = false;
-        let isPixRendered = false;
+        let pixStatusInterval;
+        let isCardBrickRendered = false;
+        let isPixBrickRendered = false;
         
         function handlePaymentSuccess() {
             if (pixStatusInterval) clearInterval(pixStatusInterval);
             feedbackContainer.style.color = '#28a745';
             feedbackContainer.textContent = "✅ Pagamento aprovado! Redirecionando...";
-            // Esconde todas as áreas de pagamento
             cardArea.style.display = 'none';
             pixArea.style.display = 'none';
             setTimeout(setAccessAndRedirect, 1500);
@@ -107,13 +104,13 @@
             }, 4000);
         }
 
-        async function renderCardBrick() {
-            const settings = {
+        function renderCardBrick() {
+            bricks.create('cardPayment', 'card-payment-container', {
                 initialization: { amount: 1.00 },
                 customization: { visual: { style: { theme: 'dark' } } },
                 callbacks: {
-                    onReady: () => feedbackContainer.textContent = "Preencha os dados do cartão.",
-                    onError: (error) => console.error("Card Brick Error:", error),
+                    onReady: () => { feedbackContainer.textContent = "Preencha os dados do cartão."; isCardBrickRendered = true; },
+                    onError: (error) => { console.error("Card Brick Error:", error); feedbackContainer.textContent = "Erro ao carregar o formulário."; },
                     onSubmit: (cardFormData) => {
                         feedbackContainer.textContent = "Processando seu pagamento...";
                         return new Promise((resolve, reject) => {
@@ -127,23 +124,27 @@
                         });
                     },
                 },
-            };
-            return bricks.create('cardPayment', 'card-payment-container', settings);
+            });
         }
 
-        async function renderPixBrick(preferenceId) {
-            const settings = {
+        function renderPixBrick(preferenceId) {
+            const pixContainer = document.getElementById('pix-payment-container');
+            bricks.create('pix', 'pix-payment-container', {
                 initialization: { preferenceId },
                 customization: { visual: { qrCodeSize: '240' } },
                 callbacks: {
-                    onReady: () => feedbackContainer.textContent = "Aponte a câmera para o QR Code ou copie o código.",
+                    onReady: () => {
+                        feedbackContainer.textContent = "Aponte a câmera para o QR Code ou copie o código.";
+                        isPixBrickRendered = true; // SUCESSO: Marca como renderizado SÓ AQUI!
+                    },
                     onError: (error) => {
                         console.error("PIX Brick Error:", error);
-                        document.getElementById('pix-payment-container').innerHTML = "<p class='error-message'>Ocorreu um erro ao gerar o código Pix. O servidor pode ter criado uma preferência inválida. Tente o cartão de crédito.</p>";
+                        pixContainer.innerHTML = "<p class='error-message'>Não foi possível gerar o QR Code. Isso pode ser um erro no servidor ou na configuração da sua conta Mercado Pago. Por favor, tente novamente ou escolha o Cartão de Crédito.</p>";
+                        feedbackContainer.textContent = "Falha ao carregar o Pix.";
+                        isPixBrickRendered = false; // ERRO: Garante que a flag continue falsa.
                     },
                 },
-            };
-            return bricks.create('pix', 'pix-payment-container', settings);
+            });
         }
         
         function showPaymentArea(areaToShow) {
@@ -158,49 +159,46 @@
             choiceContainer.style.display = 'flex';
             cardArea.style.display = 'none';
             pixArea.style.display = 'none';
+            // Limpa o container do Pix para permitir uma nova tentativa
+            document.getElementById('pix-payment-container').innerHTML = '';
+            isPixBrickRendered = false; 
         }
 
         function main() {
             if (hasValidAccess()) { window.location.href = APP_PAGE; return; }
             document.body.classList.remove('hidden');
 
-            // Botão para mostrar formulário de CARTÃO
-            document.getElementById('show-card-btn').addEventListener('click', async () => {
+            document.getElementById('show-card-btn').addEventListener('click', () => {
                 showPaymentArea('card');
-                feedbackContainer.textContent = "Carregando formulário...";
-                if (!isCardRendered) {
-                    await renderCardBrick();
-                    isCardRendered = true;
+                if (!isCardBrickRendered) {
+                    feedbackContainer.textContent = "Carregando formulário...";
+                    renderCardBrick();
                 } else {
                     feedbackContainer.textContent = "Preencha os dados do cartão.";
                 }
             });
 
-            // Botão para mostrar QR Code do PIX
             document.getElementById('show-pix-btn').addEventListener('click', async () => {
                 showPaymentArea('pix');
+                
+                // Se o QR Code já está na tela, não faz nada.
+                if (isPixBrickRendered) return;
+                
                 const pixContainer = document.getElementById('pix-payment-container');
-
-                // Só gera o pix uma vez para não criar múltiplas cobranças
-                if (isPixRendered) {
-                     feedbackContainer.textContent = "Use o QR code gerado ou volte para escolher outro método.";
-                     return;
-                }
+                pixContainer.innerHTML = ''; // Limpa a área para a nova tentativa
+                feedbackContainer.textContent = "Gerando código Pix, aguarde...";
+                feedbackContainer.style.color = '#ccc'; // Reseta a cor do feedback
 
                 try {
-                    feedbackContainer.textContent = "Gerando código Pix, aguarde...";
-                    pixContainer.innerHTML = ''; // Limpa a área
-                    
                     const sessionId = getSessionId();
                     const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId }) });
                     if (!res.ok) throw new Error(`O servidor respondeu com erro ${res.status}.`);
                     
                     const data = await res.json();
-                    if (!data.preferenceId) throw new Error("A resposta do servidor não contém um 'preferenceId'.");
+                    if (!data.preferenceId) throw new Error("A resposta do servidor não contém 'preferenceId'.");
 
-                    await renderPixBrick(data.preferenceId);
-                    startPixPolling(sessionId); // Inicia a verificação do pagamento
-                    isPixRendered = true;
+                    renderPixBrick(data.preferenceId);
+                    startPixPolling(sessionId);
 
                 } catch (error) {
                     console.error("Falha ao iniciar Pix:", error);
@@ -210,7 +208,6 @@
                 }
             });
 
-            // Botões de "Voltar"
             document.querySelectorAll('.back-btn').forEach(btn => btn.addEventListener('click', showChoiceArea));
         }
 
