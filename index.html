@@ -8,165 +8,178 @@
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
         
-        /* View Genérica */
-        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; }
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+        }
         .view.active { display: flex; }
 
-        h2 { font-size: 1.8em; margin-bottom: 8px; }
-        p { font-size: 1.1em; line-height: 1.5; }
-        .button { margin-top: 20px; padding: 16px 25px; font-size: 18px; border-radius: 8px; border: none; background: #009ee3; color: white; cursor: pointer; font-weight: bold; transition: background-color 0.2s; width: 100%; }
-        .button:disabled { background: #555; cursor: wait; }
-        .button:hover:not(:disabled) { background: #0089cc; }
+        /* Estilo do Botão Principal (CLIQUE AQUI) */
+        #start-btn {
+            width: 100%;
+            background-color: #22c55e; /* Cor verde */
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1.5rem;
+        }
+        #start-btn:hover { background-color: #16a34a; }
 
-        /* Estilos do View de Email */
-        #email-input { width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; border-radius: 8px; border: 1px solid #555; background: #2a2a2a; color: white; box-sizing: border-box; }
-        #email-input:focus { outline: none; border-color: #009ee3; }
-
-        /* Estilos do View do PIX (QR Code) */
-        #pix-view-content { display: flex; flex-direction: column; align-items: center; gap: 15px; background: #1e1e1e; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; border: 1px solid #333; }
-        #pix-view-content h3 { margin: 0; font-size: 1.3em; }
-        
-        /* AJUSTE DO TAMANHO DO QR CODE */
-        #qr-code-img { 
-            border: 6px solid white; 
-            border-radius: 8px; 
-            width: 100%; /* Ocupa 100% do container pai */
-            max-width: 280px; /* Mas não passa de 280px */
-            height: auto; /* Mantém a proporção */
+        /* Estilos do Formulário e QR Code */
+        #pix-form p, #pix-qr-code-container p {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 1rem;
         }
 
-        #pix-copy-paste { font-family: 'Courier New', Courier, monospace; background: #2a2a2a; padding: 12px; border: 1px dashed #555; border-radius: 6px; word-break: break-all; font-size: 0.9em; cursor: pointer; position: relative; }
-        #pix-copy-paste::after { content: 'Copiado!'; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #28a745; padding: 4px 8px; border-radius: 4px; font-family: sans-serif; font-size: 0.8em; opacity: 0; transition: opacity 0.3s; }
-        #pix-copy-paste.copied::after { opacity: 1; }
-        #pix-status { font-size: 1em; color: #ffc107; }
+        #pix-email, #pix-copy-paste-code {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #4a5568;
+            border-radius: 0.375rem;
+            background-color: #2d3748;
+            color: white;
+            box-sizing: border-box;
+        }
 
-        body.hidden { display: none; }
+        #generate-pix-btn {
+            width: 100%;
+            background-color: #009ee3; /* Cor azul para o segundo botão */
+            color: white;
+            font-weight: bold;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        #generate-pix-btn:hover { background-color: #0089cc; }
+        #generate-pix-btn:disabled { background-color: #555; cursor: wait; }
+
+        #pix-qr-code-container { margin-top: 1.5rem; }
+        #pix-qr-code-image {
+            margin: 0 auto;
+            border: 4px solid white;
+            border-radius: 0.5rem;
+            max-width: 280px;
+        }
+
+        .input-group { display: flex; margin-top: 1rem; }
+        #pix-copy-paste-code { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
+        #copy-pix-btn {
+            background-color: #4a5568;
+            font-size: 0.9em;
+            font-weight: bold;
+            padding: 0.75rem;
+            border: none;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #copy-pix-btn:hover { background-color: #718096; }
+
+        @keyframes pulse { 50% { opacity: .5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        .hidden { display: none; }
+        body.hidden-on-load { display: none; }
     </style>
 </head>
-<body class="hidden">
+<body class="hidden-on-load">
 
     <div class="container">
-        <div id="payment-view" class="view active">
-            <h2>🔒 Acesso Restrito à Ferramenta</h2>
-            <p>Para utilizar a correção por IA durante <strong>1 hora</strong>, insira seu e-mail para gerar o PIX de <strong>R$ 1,00</strong>.</p>
-            <button id="continue-btn" class="button">Continuar</button>
-            <p style="font-size:0.8em;color:#888;margin-top:20px">Pagamento seguro processado pelo Mercado Pago.</p>
+        
+        <div id="welcome-view" class="view active">
+            <h2>🔒 Acesso por 1 Hora</h2>
+            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 1,00</strong> para liberar o acesso.</p>
+            <button id="start-btn">CLIQUE AQUI</button>
         </div>
 
-        <div id="email-view" class="view">
-            <h2>Seu melhor e-mail</h2>
-            <p>Usaremos este e-mail para identificar seu pagamento.</p>
-            <input type="email" id="email-input" placeholder="seu.email@exemplo.com" class="button-like-input">
-            <button id="generate-pix-btn" class="button">Gerar PIX</button>
-        </div>
+        <div id="payment-view" class="view">
+            <form id="pix-form">
+                <p>Para gerar o QR Code, por favor, informe seu e-mail (exigido pelo Banco Central).</p>
+                <input type="email" id="pix-email" placeholder="seuemail@exemplo.com" required>
+                <button type="submit" id="generate-pix-btn">Gerar QR Code PIX</button>
+            </form>
 
-        <div id="pix-view" class="view">
-            <div id="pix-view-content">
-                <h3>Pague com PIX para liberar o acesso</h3>
-                <img id="qr-code-img" src="" alt="QR Code PIX">
-                <p style="font-size: 1em;">Clique no código abaixo para copiar:</p>
-                <div id="pix-copy-paste" title="Clique para copiar"></div>
-                <p id="pix-status">Aguardando pagamento...</p>
+            <div id="pix-qr-code-container" class="hidden">
+                <p style="font-weight: 600;">Escaneie o QR Code ou use o Copia e Cola:</p>
+                <img id="pix-qr-code-image" src="" alt="QR Code PIX">
+                <div class="input-group">
+                    <input type="text" id="pix-copy-paste-code" readonly>
+                    <button type="button" id="copy-pix-btn">Copiar</button>
+                </div>
+                <p id="pix-status-text" class="animate-pulse">Aguardando pagamento...</p>
             </div>
         </div>
+
     </div>
 
     <script>
+        // Funções de Lógica (sem alterações)
         const MP_SERVER_CREATE = "/api/create-payment";
         const APP_PAGE = "app.html";
+        function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
+        function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
+        function setAccessAndRedirect() { const expiry = Date.now() + 3600000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
+        function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
+        function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
-        function getSessionId() {
-            let sid = localStorage.getItem("mp_session_id");
-            if (!sid || sid.length < 10) {
-                sid = crypto.randomUUID();
-                localStorage.setItem("mp_session_id", sid);
-            }
-            return sid;
-        }
-
-        function hasValidAccess() {
-            const tokenString = localStorage.getItem('accessToken');
-            if (!tokenString) return false;
-            try {
-                const token = JSON.parse(tokenString);
-                return Date.now() < token.expiry;
-            } catch (e) { return false; }
-        }
-
-        function setAccessAndRedirect() {
-            const expiry = Date.now() + (60 * 60 * 1000);
-            localStorage.setItem("accessToken", JSON.stringify({ expiry }));
-            window.location.href = APP_PAGE;
-        }
-
-        function switchView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-        }
-
-        function validateEmail(email) {
-            const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-            return re.test(String(email).toLowerCase());
-        }
-
+        // Fluxo Principal da Página
         if (hasValidAccess()) {
             window.location.href = APP_PAGE;
         } else {
-            document.body.classList.remove('hidden');
+            document.body.classList.remove('hidden-on-load');
 
-            const continueBtn = document.getElementById("continue-btn");
-            const generatePixBtn = document.getElementById("generate-pix-btn");
-            const emailInput = document.getElementById("email-input");
-            
-            const qrCodeImg = document.getElementById("qr-code-img");
-            const pixCopyPaste = document.getElementById("pix-copy-paste");
+            const startBtn = document.getElementById('start-btn');
+            const pixForm = document.getElementById('pix-form');
+            const pixEmailInput = document.getElementById('pix-email');
+            const generatePixBtn = document.getElementById('generate-pix-btn');
+            const pixQrCodeContainer = document.getElementById('pix-qr-code-container');
+            const qrCodeImg = document.getElementById('pix-qr-code-image');
+            const pixCopyPasteInput = document.getElementById('pix-copy-paste-code');
+            const copyPixBtn = document.getElementById('copy-pix-btn');
+            const pixStatusText = document.getElementById('pix-status-text');
 
-            // Fluxo 1: Da tela inicial para a tela de email
-            continueBtn.addEventListener('click', () => {
-                switchView('email-view');
-                emailInput.focus();
+            // Evento 1: Botão inicial "CLIQUE AQUI"
+            startBtn.addEventListener('click', () => {
+                switchView('payment-view');
             });
 
-            // Fluxo 2: Copiar o código PIX
-            pixCopyPaste.addEventListener('click', () => {
-                navigator.clipboard.writeText(pixCopyPaste.textContent);
-                pixCopyPaste.classList.add('copied');
-                setTimeout(() => pixCopyPaste.classList.remove('copied'), 2000);
-            });
-
-            // Fluxo 3: Gerar o PIX após inserir o email
-            generatePixBtn.addEventListener("click", async () => {
-                const email = emailInput.value;
+            // Evento 2: Gerar o PIX
+            pixForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const email = pixEmailInput.value;
                 if (!validateEmail(email)) {
                     alert("Por favor, insira um endereço de e-mail válido.");
                     return;
                 }
 
                 generatePixBtn.disabled = true;
-                generatePixBtn.textContent = "Gerando PIX...";
+                generatePixBtn.textContent = "Aguarde...";
 
                 const sessionId = getSessionId();
-
                 try {
-                    const res = await fetch(MP_SERVER_CREATE, { 
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sessionId, email }) // Enviando o email
-                    });
-
-                    if (!res.ok) {
-                        const err = await res.json();
-                        throw new Error(err.error || "Erro ao iniciar o processo de pagamento.");
-                    }
-                    
+                    const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
                     const data = await res.json();
                     
                     qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
-                    pixCopyPaste.textContent = data.qrCode;
+                    pixCopyPasteInput.value = data.qrCode;
 
-                    switchView('pix-view');
+                    pixForm.classList.add('hidden');
+                    pixQrCodeContainer.classList.remove('hidden');
 
-                    // Inicia a verificação de status em segundo plano
                     const checkInterval = setInterval(async () => {
                         try {
                             const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
@@ -174,20 +187,27 @@
                                 const j = await r.json();
                                 if (j.paid) {
                                     clearInterval(checkInterval);
-                                    setAccessAndRedirect();
+                                    pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
+                                    pixStatusText.classList.remove('animate-pulse');
+                                    setTimeout(setAccessAndRedirect, 1500);
                                 }
                             }
-                        } catch (e) {
-                            console.error("Erro na verificação de status:", e);
-                            clearInterval(checkInterval); 
-                        }
+                        } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
                     }, 4000);
 
                 } catch (error) {
                     alert(error.message);
                     generatePixBtn.disabled = false;
-                    generatePixBtn.textContent = "Gerar PIX";
+                    generatePixBtn.textContent = "Gerar QR Code PIX";
                 }
+            });
+
+            // Evento 3: Copiar o código
+            copyPixBtn.addEventListener('click', () => {
+                pixCopyPasteInput.select();
+                document.execCommand('copy');
+                copyPixBtn.textContent = 'Copiado!';
+                setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
             });
         }
     </script>
