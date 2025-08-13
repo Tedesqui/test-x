@@ -1,38 +1,57 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 
-const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-const client = new MercadoPagoConfig({ accessToken });
-const payment = new Payment(client);
+export default async function handler(request, response) {
+  if (request.method !== 'GET') {
+    return response.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).end('Method Not Allowed');
+  const { sessionId } = request.query;
+  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+  if (!accessToken || !sessionId) {
+    return response.status(400).json({ error: 'Configuração do servidor ou sessionId ausente.' });
+  }
+
+  // --- INÍCIO DO DIAGNÓSTICO ---
+  console.log(`🔎 Verificando status para sessionId: ${sessionId}`);
+  // --- FIM DO DIAGNÓSTICO ---
+
+  const client = new MercadoPagoConfig({ accessToken });
+  const payment = new Payment(client);
 
   try {
-    // Agora espera 'paymentAttemptId' na URL
-    const { paymentAttemptId } = req.query;
-    if (!paymentAttemptId) {
-      return res.status(400).json({ message: "O parâmetro paymentAttemptId é obrigatório." });
-    }
-
-    const paymentSearch = await payment.search({
+    const searchResult = await payment.search({
       options: {
-        external_reference: paymentAttemptId, // Busca pelo novo ID
+        external_reference: sessionId,
         sort: 'date_created',
-        criteria: 'desc',
-      },
+        order: 'desc'
+      }
     });
 
-    const payments = paymentSearch.results;
+    // --- INÍCIO DO DIAGNÓSTICO ---
+    console.log(`📦 Resultado da busca no MP:`, JSON.stringify(searchResult, null, 2));
+    // --- FIM DO DIAGNÓSTICO ---
 
-    if (payments && payments.length > 0) {
-      if (payments[0].status === 'approved') {
-        return res.status(200).json({ paid: true });
+    if (searchResult.results && searchResult.results.length > 0) {
+      const latestPayment = searchResult.results[0];
+      
+      // --- INÍCIO DO DIAGNÓSTICO ---
+      console.log(`❗ Status do último pagamento encontrado [${latestPayment.id}]: ${latestPayment.status}`);
+      // --- FIM DO DIAGNÓSTICO ---
+
+      if (latestPayment.status === 'approved') {
+        console.log(`✅ Pagamento APROVADO para sessionId: ${sessionId}. Liberando acesso.`);
+        return response.status(200).json({ paid: true });
       }
+    } else {
+      console.log(`🤔 Nenhum pagamento encontrado para a sessionId: ${sessionId}`);
     }
-    return res.status(200).json({ paid: false });
+
+    // Se chegou até aqui, o pagamento não foi aprovado ainda.
+    return response.status(200).json({ paid: false });
 
   } catch (error) {
-    console.error("ERRO AO VERIFICAR STATUS:", error);
-    return res.status(500).json({ message: "Erro interno ao verificar status." });
+    console.error("❌ Erro ao verificar status no Mercado Pago:", error);
+    return response.status(500).json({ error: 'Falha ao verificar o status do pagamento.' });
   }
 }
