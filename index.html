@@ -8,17 +8,33 @@
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
         
-        /* Estilos do View de Pagamento Inicial */
-        #payment-view h2 { font-size: 1.8em; margin-bottom: 8px; }
-        #payment-view p { font-size: 1.1em; line-height: 1.5; max-width: 400px; }
-        #pay-btn { margin-top: 20px; padding: 16px 25px; font-size: 18px; border-radius: 8px; border: none; background: #009ee3; color: white; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
-        #pay-btn:disabled { background: #555; cursor: wait; }
-        #pay-btn:hover:not(:disabled) { background: #0089cc; }
+        /* View Genérica */
+        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; }
+        .view.active { display: flex; }
+
+        h2 { font-size: 1.8em; margin-bottom: 8px; }
+        p { font-size: 1.1em; line-height: 1.5; }
+        .button { margin-top: 20px; padding: 16px 25px; font-size: 18px; border-radius: 8px; border: none; background: #009ee3; color: white; cursor: pointer; font-weight: bold; transition: background-color 0.2s; width: 100%; }
+        .button:disabled { background: #555; cursor: wait; }
+        .button:hover:not(:disabled) { background: #0089cc; }
+
+        /* Estilos do View de Email */
+        #email-input { width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; border-radius: 8px; border: 1px solid #555; background: #2a2a2a; color: white; box-sizing: border-box; }
+        #email-input:focus { outline: none; border-color: #009ee3; }
+
+        /* Estilos do View do PIX (QR Code) */
+        #pix-view-content { display: flex; flex-direction: column; align-items: center; gap: 15px; background: #1e1e1e; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; border: 1px solid #333; }
+        #pix-view-content h3 { margin: 0; font-size: 1.3em; }
         
-        /* Estilos do View do PIX (aparece após clicar) */
-        #pix-view { display: none; flex-direction: column; align-items: center; gap: 15px; background: #1e1e1e; padding: 25px; border-radius: 12px; max-width: 350px; border: 1px solid #333; }
-        #pix-view h3 { margin: 0; font-size: 1.3em; }
-        #qr-code-img { border: 6px solid white; border-radius: 8px; }
+        /* AJUSTE DO TAMANHO DO QR CODE */
+        #qr-code-img { 
+            border: 6px solid white; 
+            border-radius: 8px; 
+            width: 100%; /* Ocupa 100% do container pai */
+            max-width: 280px; /* Mas não passa de 280px */
+            height: auto; /* Mantém a proporção */
+        }
+
         #pix-copy-paste { font-family: 'Courier New', Courier, monospace; background: #2a2a2a; padding: 12px; border: 1px dashed #555; border-radius: 6px; word-break: break-all; font-size: 0.9em; cursor: pointer; position: relative; }
         #pix-copy-paste::after { content: 'Copiado!'; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #28a745; padding: 4px 8px; border-radius: 4px; font-family: sans-serif; font-size: 0.8em; opacity: 0; transition: opacity 0.3s; }
         #pix-copy-paste.copied::after { opacity: 1; }
@@ -30,19 +46,28 @@
 <body class="hidden">
 
     <div class="container">
-        <div id="payment-view">
+        <div id="payment-view" class="view active">
             <h2>🔒 Acesso Restrito à Ferramenta</h2>
-            <p>Para utilizar a correção por IA durante <strong>1 hora</strong>, realize o pagamento único de <strong>R$ 1,00</strong> via PIX.</p>
-            <button id="pay-btn">Pagar R$ 1,00 com PIX</button>
+            <p>Para utilizar a correção por IA durante <strong>1 hora</strong>, insira seu e-mail para gerar o PIX de <strong>R$ 1,00</strong>.</p>
+            <button id="continue-btn" class="button">Continuar</button>
             <p style="font-size:0.8em;color:#888;margin-top:20px">Pagamento seguro processado pelo Mercado Pago.</p>
         </div>
 
-        <div id="pix-view">
-            <h3>Pague com PIX para liberar o acesso</h3>
-            <img id="qr-code-img" src="" alt="QR Code PIX">
-            <p>Clique no código abaixo para copiar:</p>
-            <div id="pix-copy-paste" title="Clique para copiar"></div>
-            <p id="pix-status">Aguardando pagamento...</p>
+        <div id="email-view" class="view">
+            <h2>Seu melhor e-mail</h2>
+            <p>Usaremos este e-mail para identificar seu pagamento.</p>
+            <input type="email" id="email-input" placeholder="seu.email@exemplo.com" class="button-like-input">
+            <button id="generate-pix-btn" class="button">Gerar PIX</button>
+        </div>
+
+        <div id="pix-view" class="view">
+            <div id="pix-view-content">
+                <h3>Pague com PIX para liberar o acesso</h3>
+                <img id="qr-code-img" src="" alt="QR Code PIX">
+                <p style="font-size: 1em;">Clique no código abaixo para copiar:</p>
+                <div id="pix-copy-paste" title="Clique para copiar"></div>
+                <p id="pix-status">Aguardando pagamento...</p>
+            </div>
         </div>
     </div>
 
@@ -50,10 +75,9 @@
         const MP_SERVER_CREATE = "/api/create-payment";
         const APP_PAGE = "app.html";
 
-        // ===== LÓGICA DE ACESSO =====
         function getSessionId() {
             let sid = localStorage.getItem("mp_session_id");
-            if (!sid || sid.length < 10) { // Garante que o ID não seja inválido/curto
+            if (!sid || sid.length < 10) {
                 sid = crypto.randomUUID();
                 localStorage.setItem("mp_session_id", sid);
             }
@@ -70,34 +94,56 @@
         }
 
         function setAccessAndRedirect() {
-            const expiry = Date.now() + (60 * 60 * 1000); // 1 hora
+            const expiry = Date.now() + (60 * 60 * 1000);
             localStorage.setItem("accessToken", JSON.stringify({ expiry }));
             window.location.href = APP_PAGE;
         }
 
-        // ===== FLUXO DA PÁGINA =====
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function validateEmail(email) {
+            const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+
         if (hasValidAccess()) {
             window.location.href = APP_PAGE;
         } else {
             document.body.classList.remove('hidden');
 
-            const payBtn = document.getElementById("pay-btn");
-            const paymentView = document.getElementById("payment-view");
-            const pixView = document.getElementById("pix-view");
+            const continueBtn = document.getElementById("continue-btn");
+            const generatePixBtn = document.getElementById("generate-pix-btn");
+            const emailInput = document.getElementById("email-input");
+            
             const qrCodeImg = document.getElementById("qr-code-img");
             const pixCopyPaste = document.getElementById("pix-copy-paste");
 
-            // Evento para copiar o código PIX
+            // Fluxo 1: Da tela inicial para a tela de email
+            continueBtn.addEventListener('click', () => {
+                switchView('email-view');
+                emailInput.focus();
+            });
+
+            // Fluxo 2: Copiar o código PIX
             pixCopyPaste.addEventListener('click', () => {
                 navigator.clipboard.writeText(pixCopyPaste.textContent);
                 pixCopyPaste.classList.add('copied');
                 setTimeout(() => pixCopyPaste.classList.remove('copied'), 2000);
             });
 
-            // Evento principal para iniciar o pagamento
-            payBtn.addEventListener("click", async () => {
-                payBtn.disabled = true;
-                payBtn.textContent = "Gerando PIX...";
+            // Fluxo 3: Gerar o PIX após inserir o email
+            generatePixBtn.addEventListener("click", async () => {
+                const email = emailInput.value;
+                if (!validateEmail(email)) {
+                    alert("Por favor, insira um endereço de e-mail válido.");
+                    return;
+                }
+
+                generatePixBtn.disabled = true;
+                generatePixBtn.textContent = "Gerando PIX...";
 
                 const sessionId = getSessionId();
 
@@ -105,7 +151,7 @@
                     const res = await fetch(MP_SERVER_CREATE, { 
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sessionId })
+                        body: JSON.stringify({ sessionId, email }) // Enviando o email
                     });
 
                     if (!res.ok) {
@@ -115,13 +161,10 @@
                     
                     const data = await res.json();
                     
-                    // Preenche os dados do PIX na tela
                     qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
                     pixCopyPaste.textContent = data.qrCode;
 
-                    // Esconde a view inicial e mostra a view do PIX
-                    paymentView.style.display = 'none';
-                    pixView.style.display = 'flex';
+                    switchView('pix-view');
 
                     // Inicia a verificação de status em segundo plano
                     const checkInterval = setInterval(async () => {
@@ -138,12 +181,12 @@
                             console.error("Erro na verificação de status:", e);
                             clearInterval(checkInterval); 
                         }
-                    }, 4000); // Verifica a cada 4 segundos
+                    }, 4000);
 
                 } catch (error) {
                     alert(error.message);
-                    payBtn.disabled = false;
-                    payBtn.textContent = "Pagar R$ 1,00 com PIX";
+                    generatePixBtn.disabled = false;
+                    generatePixBtn.textContent = "Gerar PIX";
                 }
             });
         }
