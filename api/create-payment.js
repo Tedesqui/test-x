@@ -1,52 +1,57 @@
-// Exemplo de backend em Node.js (/api/create-payment)
+// /api/create-payment.js
 
-// ... (seu código de inicialização do express e do mercadopago) ...
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-app.post("/api/create-payment", async (req, res) => {
-    
-    // Pega a sessionId que o frontend enviou
+// Adicione suas credenciais do Mercado Pago diretamente no Vercel
+// Vá em: Seu Projeto > Settings > Environment Variables
+const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+if (!accessToken) {
+  console.error("ERRO: MERCADOPAGO_ACCESS_TOKEN não foi definido nas variáveis de ambiente.");
+}
+
+const client = new MercadoPagoConfig({ accessToken });
+const preference = new Preference(client);
+
+// A função principal que a Vercel irá executar
+export default async function handler(req, res) {
+  // Garante que a requisição seja do tipo POST
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).end('Method Not Allowed');
+  }
+
+  try {
     const { sessionId } = req.body;
-
-    try {
-        const preferenceData = {
-            // ✅ 1. PROPÓSITO: Essencial para garantir que é um pagamento padrão.
-            purpose: 'wallet_purchase', 
-            
-            items: [
-                {
-                    // ✅ 2. TÍTULO E QUANTIDADE: Obrigatórios.
-                    title: 'Acesso por 1 hora à Ferramenta de IA',
-                    quantity: 1,
-
-                    // ✅ 3. PREÇO: DEVE ser um NÚMERO (não string) e maior que zero.
-                    unit_price: 1.00, 
-                    
-                    currency_id: 'BRL' // Moeda
-                }
-            ],
-            
-            // ✅ 4. PAYER (PAGADOR): Altamente recomendado. Adicionar um email de teste 
-            //    aumenta muito a chance de sucesso e resolve muitas falhas silenciosas.
-            payer: {
-                email: 'test_user_123456@testuser.com' 
-            },
-
-            // ✅ 5. REFERÊNCIA EXTERNA: Crucial para você saber qual pagamento 
-            //    corresponde a qual sessão de usuário no seu sistema.
-            external_reference: sessionId, 
-        };
-
-        const preference = await mercadopago.preferences.create(preferenceData);
-
-        console.log("Preferência criada com sucesso. ID:", preference.body.id);
-
-        // ✅ 6. RESPOSTA CORRETA: Envia APENAS o ID da preferência de volta para o frontend.
-        return res.status(201).json({
-            preferenceId: preference.body.id
-        });
-
-    } catch (error) {
-        console.error("ERRO AO CRIAR PREFERÊNCIA:", error);
-        return res.status(500).json({ message: "Falha ao criar preferência de pagamento." });
+    if (!sessionId) {
+      return res.status(400).json({ message: "sessionId é obrigatório." });
     }
-});
+
+    const preferenceData = {
+      body: {
+        purpose: 'wallet_purchase',
+        items: [
+          {
+            title: 'Acesso por 1 hora à Ferramenta de IA',
+            quantity: 1,
+            unit_price: 1.00,
+            currency_id: 'BRL',
+          }
+        ],
+        payer: {
+          email: 'test_user_123456@testuser.com', // Email de teste recomendado
+        },
+        external_reference: sessionId,
+      }
+    };
+
+    const result = await preference.create(preferenceData);
+
+    // Retorna APENAS o ID da preferência
+    return res.status(201).json({ preferenceId: result.id });
+
+  } catch (error) {
+    console.error("ERRO AO CRIAR PREFERÊNCIA:", error);
+    return res.status(500).json({ message: "Falha ao criar preferência de pagamento." });
+  }
+}
