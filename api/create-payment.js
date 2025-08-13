@@ -1,54 +1,52 @@
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+// Exemplo de backend em Node.js (/api/create-payment)
 
-export default async function handler(request, response) {
-  if (request.method !== 'POST') {
-    return response.status(405).json({ error: 'Method Not Allowed' });
-  }
+// ... (seu código de inicialização do express e do mercadopago) ...
 
-  const { sessionId } = request.body;
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-
-  if (!accessToken || !sessionId) {
-    return response.status(500).json({ error: 'Configuração do servidor ou sessionId ausente.' });
-  }
-  
-  const client = new MercadoPagoConfig({ accessToken });
-  const preference = new Preference(client);
-
-  try {
-    // --- INÍCIO DA ALTERAÇÃO ---
-    // Calcula a data de expiração para daqui a 1 hora
-    const expirationDate = new Date();
-    expirationDate.setHours(expirationDate.getHours() + 1);
-    // --- FIM DA ALTERAÇÃO ---
-
-    const result = await preference.create({
-      body: {
-        items: [{
-          id: 'acesso_correcao_ia_1h',
-          title: 'Acesso por 1 hora à Correção de Prova com IA',
-          quantity: 1,
-          currency_id: 'BRL',
-          unit_price: 1.00,
-        }],
-        back_urls: {
-            success: `https://prova-projeto.vercel.app/index.html?payment_status=success`,
-            failure: `https://prova-projeto.vercel.app/index.html?payment_status=failure`,
-            pending: `https://prova-projeto.vercel.app/index.html?payment_status=pending`,
-        },
-        auto_return: 'approved',
-        external_reference: sessionId,
-        
-        // --- ADIÇÃO DA DATA DE EXPIRAÇÃO ---
-        // Define que a preferência (e o PIX gerado) expira em 1 hora
-        date_of_expiration: expirationDate.toISOString(),
-      }
-    });
+app.post("/api/create-payment", async (req, res) => {
     
-    response.status(201).json({ preferenceId: result.id });
+    // Pega a sessionId que o frontend enviou
+    const { sessionId } = req.body;
 
-  } catch (error) {
-    console.error("Erro ao criar preferência no Mercado Pago:", error);
-    response.status(500).json({ error: 'Falha ao criar preferência de pagamento.' });
-  }
-}
+    try {
+        const preferenceData = {
+            // ✅ 1. PROPÓSITO: Essencial para garantir que é um pagamento padrão.
+            purpose: 'wallet_purchase', 
+            
+            items: [
+                {
+                    // ✅ 2. TÍTULO E QUANTIDADE: Obrigatórios.
+                    title: 'Acesso por 1 hora à Ferramenta de IA',
+                    quantity: 1,
+
+                    // ✅ 3. PREÇO: DEVE ser um NÚMERO (não string) e maior que zero.
+                    unit_price: 1.00, 
+                    
+                    currency_id: 'BRL' // Moeda
+                }
+            ],
+            
+            // ✅ 4. PAYER (PAGADOR): Altamente recomendado. Adicionar um email de teste 
+            //    aumenta muito a chance de sucesso e resolve muitas falhas silenciosas.
+            payer: {
+                email: 'test_user_123456@testuser.com' 
+            },
+
+            // ✅ 5. REFERÊNCIA EXTERNA: Crucial para você saber qual pagamento 
+            //    corresponde a qual sessão de usuário no seu sistema.
+            external_reference: sessionId, 
+        };
+
+        const preference = await mercadopago.preferences.create(preferenceData);
+
+        console.log("Preferência criada com sucesso. ID:", preference.body.id);
+
+        // ✅ 6. RESPOSTA CORRETA: Envia APENAS o ID da preferência de volta para o frontend.
+        return res.status(201).json({
+            preferenceId: preference.body.id
+        });
+
+    } catch (error) {
+        console.error("ERRO AO CRIAR PREFERÊNCIA:", error);
+        return res.status(500).json({ message: "Falha ao criar preferência de pagamento." });
+    }
+});
