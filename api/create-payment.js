@@ -2,12 +2,11 @@
 
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-// Adicione suas credenciais do Mercado Pago diretamente no Vercel
-// Vá em: Seu Projeto > Settings > Environment Variables
+// Pega o token das Variáveis de Ambiente da Vercel
 const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
 if (!accessToken) {
-  console.error("ERRO: MERCADOPAGO_ACCESS_TOKEN não foi definido nas variáveis de ambiente.");
+  console.error("ERRO: MERCADOPAGO_ACCESS_TOKEN não foi definido.");
 }
 
 const client = new MercadoPagoConfig({ accessToken });
@@ -15,7 +14,6 @@ const preference = new Preference(client);
 
 // A função principal que a Vercel irá executar
 export default async function handler(req, res) {
-  // Garante que a requisição seja do tipo POST
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
@@ -38,20 +36,20 @@ export default async function handler(req, res) {
             currency_id: 'BRL',
           }
         ],
-        payer: {
-          email: 'test_user_123456@testuser.com', // Email de teste recomendado
-        },
+        // O objeto 'payer' foi completamente removido para evitar o conflito
+        // entre credenciais de produção e usuário de teste.
         external_reference: sessionId,
       }
     };
 
     const result = await preference.create(preferenceData);
-
-    // Retorna APENAS o ID da preferência
+    
     return res.status(201).json({ preferenceId: result.id });
 
   } catch (error) {
     console.error("ERRO AO CRIAR PREFERÊNCIA:", error);
-    return res.status(500).json({ message: "Falha ao criar preferência de pagamento." });
+    // Transforma o erro do MP em uma resposta mais clara, se possível
+    const errorMessage = error.cause?.[0]?.description || error.message || "Falha ao criar preferência de pagamento.";
+    return res.status(500).json({ message: errorMessage });
   }
 }
