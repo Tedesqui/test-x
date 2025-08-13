@@ -12,14 +12,16 @@
         p { font-size: 1.1em; line-height: 1.5; max-width: 450px; }
         body.hidden { visibility: hidden; }
 
-        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; margin-top: 15px; }
-        .tab-button { background: none; border: none; color: #aaa; padding: 10px 18px; cursor: pointer; font-size: 1em; border-bottom: 2px solid transparent; }
-        .tab-button.active { color: white; border-bottom: 2px solid #009ee3; }
-        .tab-content { display: none; width: 100%; max-width: 380px; min-height: 300px; /* Aumentei a altura mínima */ }
-        .tab-content.active { display: block; }
+        /* Estilos para os Botões e Áreas de Pagamento */
+        .payment-choice-container { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; margin-top: 20px; }
+        .choice-btn { background-color: #333; color: white; border: 1px solid #555; border-radius: 8px; padding: 18px; font-size: 1.1em; cursor: pointer; text-align: left; font-weight: bold; }
+        .choice-btn:hover { background-color: #444; }
+
+        .payment-area { display: none; width: 100%; max-width: 400px; margin-top: 15px; }
         
-        #feedback-container { font-size: 1em; color: #ccc; margin-top: 20px; height: 20px; transition: color 0.3s; }
+        #feedback-container { font-size: 1em; color: #ccc; margin-top: 25px; height: 20px; transition: color 0.3s; }
         .error-message { color: #ff9999; font-size: 0.9em; padding: 10px; border: 1px solid #555; border-radius: 4px; }
+        .back-btn { background: none; border: none; color: #009ee3; cursor: pointer; margin-top: 20px; font-size: 0.9em; }
     </style>
 </head>
 <body class="hidden">
@@ -28,19 +30,22 @@
         <h2>🔒 Acesso Restrito à Ferramenta de Correção</h2>
         <p>Para usar a ferramenta por <strong>1 hora</strong>, faça o pagamento de <strong>R$ 1,00</strong>.</p>
 
-        <div class="tabs">
-            <button class="tab-button active" data-tab="card">💳 Cartão de Crédito</button>
-            <button class="tab-button" data-tab="pix">Pix</button>
+        <div id="payment-choice-container" class="payment-choice-container">
+            <button id="show-card-btn" class="choice-btn">💳 Pagar com Cartão de Crédito</button>
+            <button id="show-pix-btn" class="choice-btn">✨ Pagar com Pix</button>
         </div>
 
-        <div id="card" class="tab-content active">
+        <div id="card-payment-area" class="payment-area">
             <div id="card-payment-container"></div>
-        </div>
-        <div id="pix" class="tab-content">
-            <div id="pix-payment-container"></div>
+            <button class="back-btn" data-target="card">← Escolher outra forma de pagamento</button>
         </div>
 
-        <div id="feedback-container">Carregando opções de pagamento...</div>
+        <div id="pix-payment-area" class="payment-area">
+            <div id="pix-payment-container"></div>
+            <button class="back-btn" data-target="pix">← Escolher outra forma de pagamento</button>
+        </div>
+        
+        <div id="feedback-container"></div>
     </div>
 
     <script>
@@ -72,16 +77,25 @@
         const feedbackContainer = document.getElementById('feedback-container');
         let pixStatusInterval;
 
+        const choiceContainer = document.getElementById('payment-choice-container');
+        const cardArea = document.getElementById('card-payment-area');
+        const pixArea = document.getElementById('pix-payment-area');
+        
+        let isCardRendered = false;
+        let isPixRendered = false;
+        
         function handlePaymentSuccess() {
             if (pixStatusInterval) clearInterval(pixStatusInterval);
             feedbackContainer.style.color = '#28a745';
             feedbackContainer.textContent = "✅ Pagamento aprovado! Redirecionando...";
+            // Esconde todas as áreas de pagamento
+            cardArea.style.display = 'none';
+            pixArea.style.display = 'none';
             setTimeout(setAccessAndRedirect, 1500);
         }
-        
-        function startPixPolling() {
+
+        function startPixPolling(sessionId) {
             if (pixStatusInterval) clearInterval(pixStatusInterval);
-            const sessionId = getSessionId();
             pixStatusInterval = setInterval(async () => {
                 try {
                     const r = await fetch(`${MP_SERVER_CHECK_STATUS}?sessionId=${sessionId}`);
@@ -89,10 +103,7 @@
                         const j = await r.json();
                         if (j.paid) handlePaymentSuccess();
                     }
-                } catch (e) {
-                    console.error("Polling Error:", e);
-                    clearInterval(pixStatusInterval);
-                }
+                } catch (e) { console.error("Polling Error:", e); clearInterval(pixStatusInterval); }
             }, 4000);
         }
 
@@ -101,36 +112,18 @@
                 initialization: { amount: 1.00 },
                 customization: { visual: { style: { theme: 'dark' } } },
                 callbacks: {
-                    onReady: () => {
-                        if (document.getElementById('card').classList.contains('active')) {
-                            feedbackContainer.textContent = "Preencha os dados do cartão.";
-                        }
-                    },
+                    onReady: () => feedbackContainer.textContent = "Preencha os dados do cartão.",
                     onError: (error) => console.error("Card Brick Error:", error),
                     onSubmit: (cardFormData) => {
                         feedbackContainer.textContent = "Processando seu pagamento...";
                         return new Promise((resolve, reject) => {
-                            fetch(MP_SERVER_PROCESS_CARD, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ ...cardFormData, sessionId: getSessionId() }),
-                            })
-                            .then(response => response.json())
+                            fetch(MP_SERVER_PROCESS_CARD, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...cardFormData, sessionId: getSessionId() }) })
+                            .then(res => res.json())
                             .then(data => {
-                                if (data.status === 'approved') {
-                                    handlePaymentSuccess();
-                                    resolve();
-                                } else {
-                                    alert(data.message || "Pagamento recusado.");
-                                    feedbackContainer.textContent = "Pagamento recusado. Tente novamente.";
-                                    reject();
-                                }
+                                if (data.status === 'approved') { handlePaymentSuccess(); resolve(); } 
+                                else { alert(data.message || "Pagamento recusado."); feedbackContainer.textContent = "Pagamento recusado. Tente novamente."; reject(); }
                             })
-                            .catch(error => {
-                                alert("Ocorreu uma falha na comunicação. Tente novamente.");
-                                feedbackContainer.textContent = "Erro no pagamento. Tente novamente.";
-                                reject();
-                            });
+                            .catch(error => { alert("Ocorreu uma falha na comunicação."); feedbackContainer.textContent = "Erro no pagamento. Tente novamente."; reject(); });
                         });
                     },
                 },
@@ -139,89 +132,86 @@
         }
 
         async function renderPixBrick(preferenceId) {
-            const pixContainer = document.getElementById('pix-payment-container');
-            if (!preferenceId) {
-                console.error("PIX Brick Falhou: preferenceId está ausente.");
-                pixContainer.innerHTML = "<p class='error-message'>Não foi possível carregar a opção Pix. O servidor não retornou um ID de pagamento. Verifique o backend.</p>";
-                return;
-            }
             const settings = {
                 initialization: { preferenceId },
                 customization: { visual: { qrCodeSize: '240' } },
                 callbacks: {
-                    onReady: () => {
-                        if (document.getElementById('pix').classList.contains('active')) {
-                            feedbackContainer.textContent = "Aponte a câmera para o QR Code ou copie o código.";
-                        }
-                        startPixPolling();
-                    },
+                    onReady: () => feedbackContainer.textContent = "Aponte a câmera para o QR Code ou copie o código.",
                     onError: (error) => {
                         console.error("PIX Brick Error:", error);
-                        pixContainer.innerHTML = "<p class='error-message'>Ocorreu um erro ao gerar o código Pix. Isso pode ser um problema com a preferência de pagamento gerada pelo servidor. Tente usar o cartão de crédito.</p>";
+                        document.getElementById('pix-payment-container').innerHTML = "<p class='error-message'>Ocorreu um erro ao gerar o código Pix. O servidor pode ter criado uma preferência inválida. Tente o cartão de crédito.</p>";
                     },
                 },
             };
             return bricks.create('pix', 'pix-payment-container', settings);
         }
+        
+        function showPaymentArea(areaToShow) {
+            choiceContainer.style.display = 'none';
+            cardArea.style.display = areaToShow === 'card' ? 'block' : 'none';
+            pixArea.style.display = areaToShow === 'pix' ? 'block' : 'none';
+        }
 
-        async function main() {
+        function showChoiceArea() {
+            if (pixStatusInterval) clearInterval(pixStatusInterval);
+            feedbackContainer.textContent = '';
+            choiceContainer.style.display = 'flex';
+            cardArea.style.display = 'none';
+            pixArea.style.display = 'none';
+        }
+
+        function main() {
             if (hasValidAccess()) { window.location.href = APP_PAGE; return; }
             document.body.classList.remove('hidden');
 
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-button, .tab-content').forEach(el => el.classList.remove('active'));
-                    button.classList.add('active');
-                    document.getElementById(button.dataset.tab).classList.add('active');
-
-                    // Define uma mensagem inicial genérica ao trocar de aba
-                    const activeBrickContainer = document.querySelector('.tab-content.active').firstElementChild;
-                    if (activeBrickContainer.childElementCount > 0) {
-                        feedbackContainer.textContent = button.dataset.tab === 'card'
-                            ? "Preencha os dados do cartão."
-                            : "Aponte a câmera para o QR Code ou copie o código.";
-                    } else {
-                         feedbackContainer.textContent = "Carregando...";
-                    }
-                });
+            // Botão para mostrar formulário de CARTÃO
+            document.getElementById('show-card-btn').addEventListener('click', async () => {
+                showPaymentArea('card');
+                feedbackContainer.textContent = "Carregando formulário...";
+                if (!isCardRendered) {
+                    await renderCardBrick();
+                    isCardRendered = true;
+                } else {
+                    feedbackContainer.textContent = "Preencha os dados do cartão.";
+                }
             });
 
-            try {
-                // =======================================================================
-                // IMPORTANTE: Verifique seu backend em /api/create-payment
-                // Ele DEVE retornar um JSON como: { "preferenceId": "ID_GERADO_AQUI" }
-                // A preferência deve ter um item com valor (amount) maior que R$ 0.00.
-                // =======================================================================
-                console.log("Criando preferência de pagamento...");
-                const res = await fetch(MP_SERVER_CREATE, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ sessionId: getSessionId() })
-                });
+            // Botão para mostrar QR Code do PIX
+            document.getElementById('show-pix-btn').addEventListener('click', async () => {
+                showPaymentArea('pix');
+                const pixContainer = document.getElementById('pix-payment-container');
 
-                if (!res.ok) {
-                    throw new Error(`O servidor respondeu com erro ${res.status}.`);
+                // Só gera o pix uma vez para não criar múltiplas cobranças
+                if (isPixRendered) {
+                     feedbackContainer.textContent = "Use o QR code gerado ou volte para escolher outro método.";
+                     return;
                 }
 
-                const data = await res.json();
-                console.log("Preferência recebida:", data);
+                try {
+                    feedbackContainer.textContent = "Gerando código Pix, aguarde...";
+                    pixContainer.innerHTML = ''; // Limpa a área
+                    
+                    const sessionId = getSessionId();
+                    const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId }) });
+                    if (!res.ok) throw new Error(`O servidor respondeu com erro ${res.status}.`);
+                    
+                    const data = await res.json();
+                    if (!data.preferenceId) throw new Error("A resposta do servidor não contém um 'preferenceId'.");
 
-                if (!data.preferenceId) {
-                    throw new Error("A resposta do servidor não contém um 'preferenceId'.");
+                    await renderPixBrick(data.preferenceId);
+                    startPixPolling(sessionId); // Inicia a verificação do pagamento
+                    isPixRendered = true;
+
+                } catch (error) {
+                    console.error("Falha ao iniciar Pix:", error);
+                    feedbackContainer.style.color = '#ff9999';
+                    feedbackContainer.textContent = "Não foi possível gerar o Pix.";
+                    pixContainer.innerHTML = `<p class='error-message'>${error.message}</p>`;
                 }
+            });
 
-                // Renderiza os dois bricks, um após o outro.
-                await renderCardBrick();
-                await renderPixBrick(data.preferenceId);
-                
-            } catch (error) {
-                console.error("Falha Crítica no Fluxo de Pagamento:", error);
-                feedbackContainer.style.color = '#ff9999';
-                feedbackContainer.textContent = `Erro: ${error.message}`;
-                // Exibe o erro nos dois containers
-                document.getElementById('card-payment-container').innerHTML = `<p class='error-message'>Falha ao carregar pagamentos.</p>`;
-                document.getElementById('pix-payment-container').innerHTML = `<p class='error-message'>Falha ao carregar pagamentos.</p>`;
-            }
+            // Botões de "Voltar"
+            document.querySelectorAll('.back-btn').forEach(btn => btn.addEventListener('click', showChoiceArea));
         }
 
         main();
