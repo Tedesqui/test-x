@@ -132,7 +132,7 @@
             } catch (err) {
                 console.error("Erro ao iniciar a câmera:", err.name, err.message);
                 let userMessage = translations.pt.status_error_camera || "Erro ao acessar a câmera.";
-                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>"; }
+                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador. Atualize a página se já deu permissão!</small>"; }
                 else { userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`; }
                 outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
             }
