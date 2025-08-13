@@ -22,26 +22,8 @@
         .error-message { color: #ff9999; font-size: 0.9em; padding: 15px; border: 1px solid #555; border-radius: 4px; line-height: 1.4; text-align: left; }
         .back-btn { background: none; border: none; color: #009ee3; cursor: pointer; margin-top: 20px; font-size: 0.9em; }
 
-        /* Estilos para o novo formulário PIX */
-        .pix-form-input {
-            width: 100%;
-            padding: 12px;
-            background-color: #222;
-            border: 1px solid #555;
-            color: white;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-        .pix-form-button {
-            width: 100%;
-            padding: 12px;
-            background-color: #009ee3;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .pix-form-input { width: 100%; padding: 12px; background-color: #222; border: 1px solid #555; color: white; border-radius: 6px; margin-bottom: 10px; }
+        .pix-form-button { width: 100%; padding: 12px; background-color: #009ee3; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .pix-form-button:hover { background-color: #00b1ff; }
         .pix-form-button:disabled { background-color: #555; cursor: not-allowed; }
     </style>
@@ -68,9 +50,7 @@
                 <input type="email" id="pix-payer-email" placeholder="seu.email@exemplo.com" required class="pix-form-input">
                 <button type="submit" id="generate-pix-code-btn" class="pix-form-button">Gerar QR Code PIX</button>
             </form>
-            
             <div id="pix-brick-container"></div>
-
             <button class="back-btn">← Escolher outra forma de pagamento</button>
         </div>
         
@@ -78,8 +58,8 @@
     </div>
 
     <script>
-        const PUBLIC_KEY = "APP_USR-e86d8ca0-976c-468a-96ca-7e556120f5eb"; // IMPORTANTE: Substitua pela sua chave
-        const MP_SERVER_CREATE = "/api/create-payment"; // Rota para criar a preferência
+        const PUBLIC_KEY = "COLE_SUA_PUBLIC_KEY_DE_PRODUÇÃO_AQUI";
+        const MP_SERVER_CREATE = "/api/create-payment";
         const MP_SERVER_CHECK_STATUS = "/api/check-status";
         const APP_PAGE = "app.html";
 
@@ -90,83 +70,56 @@
         const choiceContainer = document.getElementById('payment-choice-container');
         const cardArea = document.getElementById('card-payment-area');
         const pixArea = document.getElementById('pix-payment-area');
-        
-        // Elementos do novo fluxo PIX
         const pixEmailForm = document.getElementById('pix-email-form');
         const pixPayerEmailInput = document.getElementById('pix-payer-email');
         const generatePixCodeBtn = document.getElementById('generate-pix-code-btn');
         const pixBrickContainer = document.getElementById('pix-brick-container');
         
-        let pixStatusInterval;
-
-        // --- Funções de Lógica de Pagamento ---
-        function getSessionId() {
-            let sid = localStorage.getItem("mp_session_id");
-            if (!sid) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); }
-            return sid;
-        }
+        let paymentCheckInterval;
 
         function handlePaymentSuccess() {
-            if (pixStatusInterval) clearInterval(pixStatusInterval);
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
             feedbackContainer.style.color = '#28a745';
             feedbackContainer.textContent = "✅ Pagamento aprovado! Redirecionando...";
-            choiceContainer.style.display = 'none';
-            cardArea.style.display = 'none';
-            pixArea.style.display = 'none';
+            
+            // Cria o token de acesso e redireciona
+            const expiry = Date.now() + 3600 * 1000; // 1 hora de acesso
+            localStorage.setItem("accessToken", JSON.stringify({ expiry, grantedAt: Date.now() }));
             setTimeout(() => window.location.href = APP_PAGE, 1500);
         }
 
-        function startPixPolling(sessionId) {
-            if (pixStatusInterval) clearInterval(pixStatusInterval);
-            pixStatusInterval = setInterval(async () => {
+        // A função de verificação agora recebe um ID de tentativa de pagamento
+        function startPaymentStatusCheck(paymentAttemptId) {
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+            paymentCheckInterval = setInterval(async () => {
                 try {
-                    const r = await fetch(`${MP_SERVER_CHECK_STATUS}?sessionId=${sessionId}`);
+                    // Envia o ID da tentativa para o backend
+                    const r = await fetch(`${MP_SERVER_CHECK_STATUS}?paymentAttemptId=${paymentAttemptId}`);
                     if (r.ok) {
                         const j = await r.json();
                         if (j.paid) handlePaymentSuccess();
                     }
-                } catch (e) { console.error("Polling Error:", e); clearInterval(pixStatusInterval); }
+                } catch (e) { console.error("Polling Error:", e); clearInterval(paymentCheckInterval); }
             }, 4000);
         }
 
         function renderPixBrick(preferenceId) {
-            // Limpa o container e esconde o formulário de email
             pixBrickContainer.innerHTML = '';
             pixEmailForm.style.display = 'none';
 
             return new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    reject(new Error("A geração do QR Code demorou demais."));
-                }, 12000);
-
+                const timeoutId = setTimeout(() => reject(new Error("A geração do QR Code demorou demais.")), 12000);
                 mp.bricks().create('payment', 'pix-brick-container', {
-                    initialization: {
-                        amount: 1.00,
-                        preferenceId: preferenceId,
-                        payer: {
-                            email: pixPayerEmailInput.value,
-                        },
-                    },
-                    customization: {
-                        paymentMethods: {
-                            ticket: "all",
-                            bankTransfer: "all",
-                            creditCard: [], // Esconde cartão
-                            debitCard: [],  // Esconde débito
-                            mercadoPago: [],// Esconde conta MP
-                        },
-                        visual: { style: { theme: 'dark' } }
-                    },
+                    initialization: { amount: 1.00, preferenceId: preferenceId },
+                    customization: { paymentMethods: { ticket: "all", bankTransfer: "all", creditCard: [], debitCard: [], mercadoPago: [] }, visual: { style: { theme: 'dark' } } },
                     callbacks: {
                         onReady: () => { clearTimeout(timeoutId); resolve(); },
-                        onError: (error) => { clearTimeout(timeoutId); reject(error); },
-                        onSubmit: () => { /* Acontece quando o usuário paga e o modal fecha */ }
+                        onError: (error) => { clearTimeout(timeoutId); reject(error); }
                     },
                 });
             });
         }
         
-        // --- Funções de Controle da UI ---
         function showPaymentArea(areaToShow) {
             choiceContainer.style.display = 'none';
             cardArea.style.display = areaToShow === 'card' ? 'block' : 'none';
@@ -174,66 +127,58 @@
         }
 
         function showChoiceArea() {
-            if (pixStatusInterval) clearInterval(pixStatusInterval);
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
             feedbackContainer.textContent = '';
             choiceContainer.style.display = 'flex';
             cardArea.style.display = 'none';
             pixArea.style.display = 'none';
-            // Reseta o formulário do PIX ao voltar
             pixEmailForm.style.display = 'block';
             pixBrickContainer.innerHTML = '';
         }
 
-        // --- Função Principal ---
         function main() {
-            // Lógica de acesso (verificação se já tem token válido)
+            // Limpa o localStorage de sessões antigas para evitar o problema
+            localStorage.removeItem("mp_session_id");
+
             try {
                 const accessToken = localStorage.getItem('accessToken');
                 if (accessToken && Date.now() < JSON.parse(accessToken).expiry) {
-                    window.location.href = APP_PAGE;
-                    return;
+                    window.location.href = APP_PAGE; return;
                 }
-            } catch (e) { /* ignora erros de parsing */ }
+            } catch (e) { /* ignora */ }
             document.body.classList.remove('hidden');
 
-            // Lógica do botão de Cartão (simplificada, pois o foco é o PIX)
-            document.getElementById('show-card-btn').addEventListener('click', () => {
-                alert("A opção de Cartão de Crédito está em manutenção. Por favor, utilize o PIX.");
-            });
+            document.getElementById('show-card-btn').addEventListener('click', () => { alert("Opção em manutenção. Use o PIX."); });
 
-            // Lógica do botão de PIX (esconde opções e mostra formulário de email)
-            document.getElementById('show-pix-btn').addEventListener('click', () => {
-                showPaymentArea('pix');
-            });
-
-            // Lógica do novo formulário do PIX
+            // Lógica do formulário PIX
             pixEmailForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 generatePixCodeBtn.disabled = true;
                 feedbackContainer.textContent = "Gerando QR Code, aguarde...";
-                feedbackContainer.style.color = '#ccc';
                 
                 try {
-                    const sessionId = getSessionId();
+                    // GERA UM ID NOVO E ÚNICO PARA CADA TENTATIVA
+                    const paymentAttemptId = crypto.randomUUID();
                     const payerEmail = pixPayerEmailInput.value;
 
-                    // Envia o e-mail para o backend para criar a preferência
                     const res = await fetch(MP_SERVER_CREATE, { 
                         method: "POST", 
                         headers: { "Content-Type": "application/json" }, 
-                        body: JSON.stringify({ sessionId, payerEmail }) // Envia o email
+                        body: JSON.stringify({ paymentAttemptId, payerEmail }) // Envia o novo ID
                     });
                     
-                    if (!res.ok) throw new Error(`Seu servidor respondeu com um erro.`);
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.message || 'Seu servidor respondeu com um erro.');
+                    }
                     
                     const data = await res.json();
                     if (!data.preferenceId) throw new Error("A resposta do servidor não contém um 'preferenceId'.");
 
-                    // Renderiza o Brick do Mercado Pago com a preferência criada
                     await renderPixBrick(data.preferenceId);
                     
                     feedbackContainer.textContent = "Escaneie o QR Code para pagar.";
-                    startPixPolling(sessionId); // Começa a verificar se o pagamento foi feito
+                    startPaymentStatusCheck(paymentAttemptId);
 
                 } catch (error) {
                     console.error("Falha ao iniciar Pix:", error);
