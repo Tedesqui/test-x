@@ -20,7 +20,7 @@ export default async function handler(request, response) {
   try {
     const paymentData = {
       body: {
-        transaction_amount: 1.00,
+        transaction_amount: 4.90,
         description: 'Acesso por 1 hora à Correção de Prova com IA',
         payment_method_id: 'pix',
         external_reference: sessionId,
