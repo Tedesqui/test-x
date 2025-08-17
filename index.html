@@ -1,45 +1,42 @@
 <script>
-    // --- LÓGICA DE DETECÇÃO DE IDIOMA E PRECIFICAÇÃO ---
-    const userLanguage = navigator.language || navigator.userLanguage;
-    let price, currency, displayText;
+    // Envolve toda a lógica em um evento que espera a página carregar completamente.
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- 1. LÓGICA DE DETECÇÃO DE IDIOMA E PRECIFICAÇÃO ---
+        const userLanguage = navigator.language || navigator.userLanguage;
+        let price, currency, displayText;
 
-    if (userLanguage !== 'pt-BR') {
-        price = 3.00;
-        currency = 'USD';
-        displayText = '$3.00 USD';
-        document.title = "Get the answers for your test questions!";
-    } else {
-        price = 14.90;
-        currency = 'BRL';
-        displayText = 'R$ 14,90';
-    }
+        if (userLanguage !== 'pt-BR') {
+            price = 3.00;
+            currency = 'USD';
+            displayText = '$3.00 USD';
+            document.title = "Get the answers for your test questions!";
+        } else {
+            price = 14.90;
+            currency = 'BRL';
+            displayText = 'R$ 14,90';
+        }
 
-    // A atualização dos textos foi movida para DENTRO do fluxo principal
-    // para garantir que a página esteja visível antes de qualquer manipulação.
+        // --- 2. DEFINIÇÃO DAS FUNÇÕES GLOBAIS ---
+        const APP_PAGE = "/app.html";
+        function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
+        function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
+        function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
+        function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
-    // --- FLUXO PRINCIPAL DA PÁGINA ---
-    const APP_PAGE = "/app.html";
-    function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
-    function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-    function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
-    function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
-    
-    if (hasValidAccess()) { 
-        window.location.href = APP_PAGE; 
-    } else {
-        // <<< CORREÇÃO AQUI >>>
-        // Esta é a linha que estava faltando. Ela torna a página visível.
+        // --- 3. FLUXO PRINCIPAL DA PÁGINA ---
+        if (hasValidAccess()) {
+            window.location.href = APP_PAGE;
+            return; // Interrompe a execução se o usuário já tem acesso
+        }
+
+        // Torna a página visível
         document.body.classList.remove('hidden-on-load');
 
-        // Agora que a página está visível, atualizamos os textos.
-        document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
-        document.querySelector("#welcome-view strong").textContent = displayText;
-        document.querySelector("#welcome-view p").innerHTML = (currency === 'USD') 
-            ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
-            : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
-
-
-        // O restante do código para lidar com os eventos de clique e formulário
+        // Seleciona os elementos do HTML APÓS garantir que a página carregou
+        const welcomeViewH2 = document.querySelector("#welcome-view h2");
+        const welcomeViewStrong = document.querySelector("#welcome-view strong");
+        const welcomeViewP = document.querySelector("#welcome-view p");
         const startBtn = document.getElementById('start-btn');
         const pixForm = document.getElementById('pix-form');
         const pixEmailInput = document.getElementById('pix-email');
@@ -50,6 +47,20 @@
         const copyPixBtn = document.getElementById('copy-pix-btn');
         const pixStatusText = document.getElementById('pix-status-text');
 
+        // Atualiza os textos na página
+        if (welcomeViewH2) {
+            welcomeViewH2.textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
+        }
+        if (welcomeViewStrong) {
+            welcomeViewStrong.textContent = displayText;
+        }
+        if (welcomeViewP) {
+            welcomeViewP.innerHTML = (currency === 'USD')
+                ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
+                : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
+        }
+
+        // Adiciona os eventos
         startBtn.addEventListener('click', () => switchView('payment-view'));
 
         pixForm.addEventListener('submit', async (event) => {
@@ -58,44 +69,24 @@
             if (!/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(String(email).toLowerCase())) {
                 alert("Por favor, insira um endereço de e-mail válido."); return;
             }
-
             generatePixBtn.disabled = true;
             generatePixBtn.textContent = "Aguarde...";
-            
             const sessionId = getSessionId();
             try {
                 const payload = { sessionId, email, currency };
-                
-                const res = await fetch("/api/create-payment", { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify(payload) 
-                });
-
+                const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
                 if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
-                
                 const data = await res.json();
-                
                 qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
                 pixCopyPasteInput.value = data.qrCode;
                 pixForm.classList.add('hidden');
                 pixQrCodeContainer.classList.remove('hidden');
-
                 const checkInterval = setInterval(async () => {
                     try {
                         const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
-                        if (r.ok) {
-                            const j = await r.json();
-                            if (j.paid) {
-                                clearInterval(checkInterval);
-                                pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
-                                pixStatusText.classList.remove('animate-pulse');
-                                setTimeout(setAccessAndRedirect, 1500);
-                            }
-                        }
+                        if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); pixStatusText.textContent = "Pagamento Aprovado! Redirecionando..."; pixStatusText.classList.remove('animate-pulse'); setTimeout(setAccessAndRedirect, 1500); } }
                     } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
                 }, 4000);
-
             } catch (error) {
                 alert(error.message);
                 generatePixBtn.disabled = false;
@@ -109,5 +100,5 @@
             copyPixBtn.textContent = 'Copiado!';
             setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
         });
-    }
+    });
 </script>
