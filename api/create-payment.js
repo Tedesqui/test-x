@@ -43,13 +43,16 @@ export default async function handler(request, response) {
             name: linkName,
             description: 'Acesso por 1 semana à ferramenta de correção de provas com IA.',
             value: chargeValue,
-            billingType: "UNDEFINED",
             chargeType: "DETACHED",
-            
-            // --- CORREÇÃO AQUI ---
-            // Removemos o "dueDate" e adicionamos "dueDateLimitDays".
-            // O link de pagamento será válido por 2 dias úteis.
-            "dueDateLimitDays": 2,
+            dueDateLimitDays: 2,
+
+            // --- ALTERAÇÃO AQUI ---
+            // Removemos "billingType" e adicionamos "allowedBillingTypes"
+            // para permitir apenas PIX e Cartão de Crédito.
+            "allowedBillingTypes": [
+                "PIX",
+                "CREDIT_CARD"
+            ],
             
             "callback": {
                 "autoRedirect": true,
