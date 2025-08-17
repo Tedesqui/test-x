@@ -11,17 +11,9 @@
         #ui-container { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 2; }
         #controls { display: flex; gap: 15px; justify-content: center; align-items: center; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); }
         button { padding: 12px 20px; font-size: 16px; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        button:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); }
-        button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
+        button:hover:not(:disabled) { background-color: #0056b3; }
+        button:disabled { background: #555; cursor: not-allowed; }
         #output-panel { background: rgba(0,0,0,0.9); padding: 15px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; border-top: 1px solid #444; }
-        #confirmation-view { display: flex; flex-direction: column; gap: 15px; }
-        #confirmation-view p { margin: 0; font-size: 0.9em; color: #ccc; }
-        textarea { width: 100%; min-height: 120px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: white; font-size: 1em; padding: 10px; box-sizing: border-box; resize: vertical; }
-        textarea:focus { outline: none; border-color: #007bff; }
-        #confirmation-controls { display: flex; gap: 10px; justify-content: flex-end; }
-        #confirmation-controls button.confirm { background-color: #28a745; }
-        #confirmation-controls button.secondary { background-color: #6c757d; }
-        pre#correction-result { background-color: #2a2a2a; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
         #access-timer { position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9em; z-index: 10; border: 1px solid #444; }
     </style>
 </head>
@@ -34,9 +26,7 @@
                 <button id="zoomBtn">🔍 Zoom: 1x</button>
                 <button id="captureBtn" data-i18n="captureButton">📷 Clique para Corrigir</button>
             </div>
-            <div id="output-panel">
-                <div id="status-text" data-i18n="statusInitial">📷 Aponte a câmera para o texto e capture.</div>
-            </div>
+            <div id="output-panel"><div id="status-text" data-i18n="statusInitial">📷 Aponte a câmera para o texto e capture.</div></div>
         </div>
     </div>
     <div id="access-timer">
@@ -44,73 +34,31 @@
     </div>
 
     <script>
-        // --- DICIONÁRIO DE TRADUÇÕES (i18n) ---
         const translations = {
-            "pt-br": {
-                appTitle: "Correção de Prova com IA",
-                captureButton: "📷 Clique para Corrigir",
-                statusInitial: "📷 Aponte a câmera para o texto e capture.",
-                timerLabel: "Tempo Restante",
-                sessionExpiredAlert: "Sua sessão de 1 semana expirou. Por favor, pague novamente.",
-                statusReading: "🧠 Lendo o texto da imagem...",
-                statusProcessing: "🤖 Processando com a IA...",
-                statusErrorCamera: "❌ Erro ao acessar a câmera.",
-                statusErrorOcr: "❌ Erro ao ler o texto: ",
-                statusErrorApi: "❌ Erro na API: ",
-                confirmPrompt: "<strong>Revise o texto extraído e clique para obter a resposta:</strong>",
-                retryButton: "Capturar Novamente",
-                getAnswerButton: "Obter Resposta",
-                emptyTextAlert: "O campo de texto não pode estar vazio.",
-                resultTitle: "✅ Resultado"
-            },
-            "en": {
-                appTitle: "AI Proofreader",
-                captureButton: "📷 Click to Correct",
-                statusInitial: "📷 Point the camera at the text and capture.",
-                timerLabel: "Time Left",
-                sessionExpiredAlert: "Your 1-week session has expired. Please pay again.",
-                statusReading: "🧠 Reading text from image...",
-                statusProcessing: "🤖 Processing with AI...",
-                statusErrorCamera: "❌ Error accessing the camera.",
-                statusErrorOcr: "❌ Error reading text: ",
-                statusErrorApi: "❌ API Error: ",
-                confirmPrompt: "<strong>Review the extracted text and click to get the answer:</strong>",
-                retryButton: "Capture Again",
-                getAnswerButton: "Get Answer",
-                emptyTextAlert: "The text field cannot be empty.",
-                resultTitle: "✅ Result"
-            },
-            "es": {
-                appTitle: "Corrector de Pruebas con IA",
-                captureButton: "📷 Haga Clic para Corregir",
-                statusInitial: "📷 Apunte la cámara al texto y capture.",
-                timerLabel: "Tiempo Restante",
-                sessionExpiredAlert: "Su sesión de 1 semana ha expirado. Por favor, pague de nuevo.",
-                statusReading: "🧠 Leyendo el texto de la imagen...",
-                statusProcessing: "🤖 Procesando con IA...",
-                statusErrorCamera: "❌ Error al acceder a la cámara.",
-                statusErrorOcr: "❌ Error al leer el texto: ",
-                statusErrorApi: "❌ Error de API: ",
-                confirmPrompt: "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>",
-                retryButton: "Capturar de Nuevo",
-                getAnswerButton: "Obtener Respuesta",
-                emptyTextAlert: "El campo de texto no puede estar vacío.",
-                resultTitle: "✅ Resultado"
-            }
+            "pt-br": { appTitle: "Correção de Prova com IA", captureButton: "📷 Clique para Corrigir", statusInitial: "📷 Aponte a câmera para o texto e capture.", timerLabel: "Tempo Restante", sessionExpiredAlert: "Sua sessão de 1 semana expirou. Por favor, pague novamente.", statusReading: "🧠 Lendo o texto da imagem...", statusProcessing: "🤖 Processando com a IA...", statusErrorCamera: "❌ Erro ao acessar a câmera.", statusErrorOcr: "❌ Erro ao ler o texto: ", statusErrorApi: "❌ Erro na API: ", confirmPrompt: "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", retryButton: "Capturar Novamente", getAnswerButton: "Obter Resposta", emptyTextAlert: "O campo de texto não pode estar vazio.", resultTitle: "✅ Resultado" },
+            "en": { appTitle: "AI Proofreader", captureButton: "📷 Click to Correct", statusInitial: "📷 Point the camera at the text and capture.", timerLabel: "Time Left", sessionExpiredAlert: "Your 1-week session has expired. Please pay again.", statusReading: "🧠 Reading text from image...", statusProcessing: "🤖 Processing with AI...", statusErrorCamera: "❌ Error accessing the camera.", statusErrorOcr: "❌ Error reading text: ", statusErrorApi: "❌ API Error: ", confirmPrompt: "<strong>Review the extracted text and click to get the answer:</strong>", retryButton: "Capture Again", getAnswerButton: "Get Answer", emptyTextAlert: "The text field cannot be empty.", resultTitle: "✅ Result" },
+            "es": { appTitle: "Corrector de Pruebas con IA", captureButton: "📷 Haga Clic para Corrigir", statusInitial: "📷 Apunte la cámara al texto y capture.", timerLabel: "Tiempo Restante", sessionExpiredAlert: "Su sesión de 1 semana ha expirado. Por favor, pague de nuevo.", statusReading: "🧠 Leyendo el texto de la imagen...", statusProcessing: "🤖 Procesando con IA...", statusErrorCamera: "❌ Error al acceder a la cámara.", statusErrorOcr: "❌ Error al leer el texto: ", statusErrorApi: "❌ Error de API: ", confirmPrompt: "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>", retryButton: "Capturar de Nuevo", getAnswerButton: "Obtener Respuesta", emptyTextAlert: "El campo de texto no puede estar vacío.", resultTitle: "✅ Resultado" },
+            "it": { appTitle: "Correttore di Bozze AI", captureButton: "📷 Clicca per Correggere", statusInitial: "📷 Punta la fotocamera sul testo e cattura.", timerLabel: "Tempo Rimanente", sessionExpiredAlert: "La tua sessione di 1 settimana è scaduta. Per favore, paga di nuovo.", statusReading: "🧠 Lettura del testo dall'immagine...", statusProcessing: "🤖 Elaborazione con IA...", statusErrorCamera: "❌ Errore nell'accesso alla fotocamera.", statusErrorOcr: "❌ Errore nella lettura del testo: ", statusErrorApi: "❌ Errore API: ", confirmPrompt: "<strong>Rivedi il testo estratto e clicca per ottenere la risposta:</strong>", retryButton: "Cattura di Nuovo", getAnswerButton: "Ottieni Risposta", emptyTextAlert: "Il campo di testo non può essere vuoto.", resultTitle: "✅ Risultato" },
+            "fr": { appTitle: "Correcteur IA", captureButton: "📷 Cliquer pour Corriger", statusInitial: "📷 Pointez la caméra sur le texte et capturez.", timerLabel: "Temps Restant", sessionExpiredAlert: "Votre session d'une semaine a expiré. Veuillez payer à nouveau.", statusReading: "🧠 Lecture du texte de l'image...", statusProcessing: "🤖 Traitement par l'IA...", statusErrorCamera: "❌ Erreur d'accès à la caméra.", statusErrorOcr: "❌ Erreur de lecture du texte: ", statusErrorApi: "❌ Erreur d'API: ", confirmPrompt: "<strong>Révisez le texte extrait et cliquez pour obtenir la réponse:</strong>", retryButton: "Capturer à Nouveau", getAnswerButton: "Obtenir la Réponse", emptyTextAlert: "Le champ de texte ne peut pas être vide.", resultTitle: "✅ Résultat" },
+            "ru": { appTitle: "ИИ-корректор", captureButton: "📷 Нажмите, чтобы исправить", statusInitial: "📷 Наведите камеру на текст и сделайте снимок.", timerLabel: "Осталось времени", sessionExpiredAlert: "Ваша недельная сессия истекла. Пожалуйста, оплатите снова.", statusReading: "🧠 Чтение текста с изображения...", statusProcessing: "🤖 Обработка с помощью ИИ...", statusErrorCamera: "❌ Ошибка доступа к камере.", statusErrorOcr: "❌ Ошибка чтения текста: ", statusErrorApi: "❌ Ошибка API: ", confirmPrompt: "<strong>Просмотрите извлеченный текст и нажмите, чтобы получить ответ:</strong>", retryButton: "Сделать снимок снова", getAnswerButton: "Получить ответ", emptyTextAlert: "Текстовое поле не может быть пустым.", resultTitle: "✅ Результат" },
+            "ja": { appTitle: "AI校正ツール", captureButton: "📷 クリックして修正", statusInitial: "📷 テキストにカメラを向けてキャプチャしてください。", timerLabel: "残り時間", sessionExpiredAlert: "1週間のセッションが期限切れになりました。もう一度お支払いください。", statusReading: "🧠 画像からテキストを読み込んでいます...", statusProcessing: "🤖 AIで処理中...", statusErrorCamera: "❌ カメラへのアクセスエラー。", statusErrorOcr: "❌ テキストの読み取りエラー: ", statusErrorApi: "❌ APIエラー: ", confirmPrompt: "<strong>抽出されたテキストを確認し、クリックして回答を得てください:</strong>", retryButton: "再キャプチャ", getAnswerButton: "回答を得る", emptyTextAlert: "テキストフィールドは空にできません。", resultTitle: "✅ 結果" },
+            "ko": { appTitle: "AI 교정기", captureButton: "📷 클릭하여 수정", statusInitial: "📷 텍스트에 카메라를 맞추고 캡처하세요.", timerLabel: "남은 시간", sessionExpiredAlert: "1주일 세션이 만료되었습니다. 다시 결제해 주세요.", statusReading: "🧠 이미지에서 텍스트 읽는 중...", statusProcessing: "🤖 AI로 처리 중...", statusErrorCamera: "❌ 카메라 액세스 오류.", statusErrorOcr: "❌ 텍스트 읽기 오류: ", statusErrorApi: "❌ API 오류: ", confirmPrompt: "<strong>추출된 텍스트를 검토하고 클릭하여 답변을 얻으세요:</strong>", retryButton: "다시 캡처", getAnswerButton: "답변 얻기", emptyTextAlert: "텍스트 필드는 비워 둘 수 없습니다.", resultTitle: "✅ 결과" },
+            "zh": { appTitle: "人工智能校对器", captureButton: "📷 点击以更正", statusInitial: "📷 将相机对准文本并捕获。", timerLabel: "剩余时间", sessionExpiredAlert: "您的1周会话已过期。请重新付款。", statusReading: "🧠 正在从图像中读取文本...", statusProcessing: "🤖 正在使用AI处理...", statusErrorCamera: "❌ 访问相机时出错。", statusErrorOcr: "❌ 读取文本时出错: ", statusErrorApi: "❌ API错误: ", confirmPrompt: "<strong>查看提取的文本并点击以获取答案：</strong>", retryButton: "重新捕获", getAnswerButton: "获取答案", emptyTextAlert: "文本字段不能为空。", resultTitle: "✅ 结果" }
         };
-
-        // --- LÓGICA DE TRADUÇÃO E INICIALIZAÇÃO ---
+        
+        const supportedLanguages = { "pt-br": true, "en": true, "es": true, "it": true, "fr": true, "ru": true, "ja": true, "ko": true, "zh": true };
         const userLanguage = navigator.language || navigator.userLanguage;
-        const langCode = userLanguage.toLowerCase().startsWith('es') ? 'es' : (userLanguage.toLowerCase().startsWith('pt') ? 'pt-br' : 'en');
-        const dictionary = translations[langCode];
+        let langCode = 'en'; // Padrão
+        const userLangLower = userLanguage.toLowerCase();
+        if (supportedLanguages[userLangLower]) { langCode = userLangLower; }
+        else { const primaryLang = userLangLower.split('-')[0]; if (supportedLanguages[primaryLang]) { langCode = primaryLang; } }
+        
+        const dictionary = translations[langCode] || translations['en'];
 
         document.documentElement.lang = userLanguage;
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
-            if (dictionary[key]) {
-                const elementToUpdate = (element.tagName === 'TITLE') ? element : element;
-                elementToUpdate.innerHTML = dictionary[key];
-            }
+            if (dictionary[key]) { element.innerHTML = dictionary[key]; }
         });
 
         // --- LÓGICA DA APLICAÇÃO ---
@@ -125,25 +73,19 @@
             }
         })();
 
-        // Lógica do Timer
         const timerDisplay = document.getElementById('time-left');
         const tokenData = JSON.parse(localStorage.getItem('accessToken'));
         if (tokenData && timerDisplay) {
             const expiryTime = tokenData.expiry;
             const updateTimer = () => {
                 const timeLeft = expiryTime - Date.now();
-                if (timeLeft <= 0) {
-                    timerDisplay.textContent = 'Expirado';
-                    clearInterval(timerInterval);
-                    window.location.reload(); return;
-                }
+                if (timeLeft <= 0) { timerDisplay.textContent = 'Expirado'; clearInterval(timerInterval); window.location.reload(); return; }
                 timerDisplay.textContent = `${Math.floor(timeLeft / 1000)}s`;
             };
             const timerInterval = setInterval(updateTimer, 1000);
             updateTimer();
         }
 
-        // --- LÓGICA DA CÂMERA E IA (COMPLETA) ---
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -153,19 +95,48 @@
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
         const zoomLevels = [1, 1.5, 2, 3];
-        
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: { ideal: "environment" } } };
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { throw new Error("A API de mídia não é suportada neste navegador."); }
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
                 video.srcObject = stream;
                 mediaTrack = stream.getVideoTracks()[0];
                 const capabilities = mediaTrack.getCapabilities();
                 if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; }
-            } catch (err) {
-                console.error("Erro ao iniciar a câmera:", err.name, err.message);
-                let userMessage = dictionary.statusErrorCamera;
-                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador.</small>"; }
-                else { userMessage += `<br><small>Erro: ${err.name}</small>`; }
-                outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
+            } catch (err) { console.error("Erro ao iniciar a câmera:", err.name, err.message); outputPanel.innerHTML = `<div id="status-text">${dictionary.statusErrorCamera}</div>`; }
+        }
+        function toggleZoom() { if (!mediaTrack || !mediaTrack.getCapabilities().zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
+        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text">${dictionary.statusInitial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
+        async function captureAndRecognize() {
+            captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none';
+            outputPanel.innerHTML = `<div id="status-text">${dictionary.statusReading}</div>`;
+            try {
+                const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: canvas.toDataURL('image/jpeg') }) });
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro OCR`); }
+                const data = await response.json(); showConfirmationView(data.text.trim());
+            } catch (err) { console.error("Erro no OCR:", err); outputPanel.innerHTML = `<div id="status-text">${dictionary.statusErrorOcr}${err.message}</div>`; addRetryButton(resetUI); }
+        }
+        function showConfirmationView(ocrText) {
+            outputPanel.innerHTML = `<div id="confirmation-view"><p>${dictionary.confirmPrompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary">${dictionary.retryButton}</button><button id="sendBtn" class="confirm">${dictionary.getAnswerButton}</button></div></div>`;
+            document.getElementById('retryBtn').addEventListener('click', resetUI);
+            document.getElementById('sendBtn').addEventListener('click', sendForCorrection);
+        }
+        async function sendForCorrection() {
+            const textToProcess = document.getElementById('text-to-process').value;
+            if (!textToProcess.trim()) { alert(dictionary.emptyTextAlert); return; }
+            outputPanel.innerHTML = `<div id="status-text">${dictionary.statusProcessing}</div>`;
+            try {
+                const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: langCode }) });
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro API`); }
+                const data = await response.json();
+                outputPanel.innerHTML = `<h2>${dictionary.resultTitle}</h2><pre id="correction-result">${data.resultado}</pre>`;
+            } catch (err) { console.error("Erro na requisição:", err); outputPanel.innerHTML = `<div id="status-text">${dictionary.statusErrorApi}${err.message}</div>`; } finally { addRetryButton(resetUI); }
+        }
+        function addRetryButton(action) { const btn = document.createElement('button'); btn.innerText = dictionary.retryButton; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
+        zoomBtn.addEventListener('click', toggleZoom);
+        captureBtn.addEventListener('click', captureAndRecognize);
+        startCamera();
+    </script>
+</body>
+</html>
