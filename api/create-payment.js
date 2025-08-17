@@ -45,16 +45,15 @@ export default async function handler(request, response) {
             value: chargeValue,
             chargeType: "DETACHED",
             dueDateLimitDays: 2,
-
-            // --- CORREÇÃO AQUI ---
-            // Reintroduzimos o "billingType" como UNDEFINED.
-            // A API do Asaas exige este campo para habilitar a escolha do cliente.
-            "billingType": "UNDEFINED",
+            billingType: "UNDEFINED",
             
-            // E mantemos "allowedBillingTypes" para filtrar as opções disponíveis.
+            // --- ALTERAÇÃO AQUI ---
+            // Adicionamos "BOLETO" de volta à lista e definimos a ordem desejada.
+            // 1º PIX, 2º Cartão de Crédito, 3º Boleto.
             "allowedBillingTypes": [
                 "PIX",
-                "CREDIT_CARD"
+                "CREDIT_CARD",
+                "BOLETO"
             ],
             
             "callback": {
