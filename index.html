@@ -107,8 +107,8 @@
     <div class="container">
         
         <div id="welcome-view" class="view active">
-            <h2>🔒 Acesso por 1 Hora à Correção de Provas</h2>
-            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 4,90</strong> para liberar o acesso ao site. Após realizar o pagamento, retorne ao site e dê permissão para o site usar a câmera do seu celular. Com a câmera aberta dentro do site, aponte para as questões e clique no botão <strong>“Clique para Corrigir”</strong> para o site identificar o texto, e em seguida clique em <strong>“Obter Resposta”</strong>.</p>
+            <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
+            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após realizar o pagamento, retorne ao site e dê permissão para o site usar a câmera do seu celular. Com a câmera aberta dentro do site, aponte para as questões e clique no botão <strong>“Clique para Corrigir”</strong> para o site identificar o texto, e em seguida clique em <strong>“Obter Resposta”</strong>.</p>
             <button id="start-btn">CLIQUE AQUI</button>
         </div>
 
@@ -138,7 +138,8 @@
         const APP_PAGE = "app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
         function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-        function setAccessAndRedirect() { const expiry = Date.now() + 3600000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
+        // MODIFICAÇÃO 3: Tempo de acesso alterado de 1 hora (3600000) para 7 dias (604800000)
+        function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
         function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
         function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
