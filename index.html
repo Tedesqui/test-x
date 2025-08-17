@@ -3,187 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receba as respostas das questões da sua prova!!!</title>
+    <title data-i18n="pageTitle">Receba as respostas das questões da sua prova!!!</title>
     <style>
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: #121212; 
-            color: white; 
-        }
-        .hidden-on-load { 
-            visibility: hidden; 
-        }
-        .container { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            min-height: 100vh; 
-            text-align: center; 
-            padding: 20px; 
-            box-sizing: border-box; 
-        }
-        .view { 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            width: 100%; 
-            max-width: 420px; 
-            margin-top: -250px; 
-        }
-        .view.active { 
-            display: flex; 
-        }
-        #start-btn { 
-            width: 100%; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 18px; 
-            padding: 0.75rem 1rem; 
-            border: none; 
-            border-radius: 0.5rem; 
-            cursor: pointer; 
-            transition: background-color 0.2s; 
-            margin-top: 1.5rem; 
-            background-color: #22c55e; 
-        }
-        #start-btn:hover:not(:disabled) { 
-            background-color: #16a34a; 
-        }
-        #start-btn:disabled {
-            background-color: #555;
-            cursor: wait;
-        }
-        .hidden { 
-            display: none; 
-        }
+        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
+        .hidden-on-load { visibility: hidden; }
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
+        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; margin-top: -250px; }
+        .view.active { display: flex; }
+        #start-btn { width: 100%; color: white; font-weight: bold; font-size: 18px; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1.5rem; background-color: #22c55e; }
+        #start-btn:hover:not(:disabled) { background-color: #16a34a; }
+        #start-btn:disabled { background-color: #555; cursor: wait; }
     </style>
 </head>
 <body class="hidden-on-load">
     <div class="container">
         <div id="welcome-view" class="view active">
-            <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
-            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.</p>
-            <button id="start-btn">CLIQUE AQUI PARA PAGAR</button>
+            <h2 data-i18n="headline">🔒 Acesso por 1 Semana à Correção de Provas</h2>
+            <p data-i18n="subheadline" style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong data-i18n="price">R$ 14,90</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong data-i18n="captureAction">“Clique para Corrigir”</strong> e em seguida em <strong data-i18n="answerAction">“Obter Resposta”</strong>.</p>
+            <button id="start-btn" data-i18n="paymentButton">CLIQUE AQUI PARA PAGAR</button>
         </div>
-        </div>
+    </div>
 
     <script>
+        // --- DICIONÁRIO DE TRADUÇÕES (i18n) ---
+        const translations = {
+            "pt-br": {
+                pageTitle: "Receba as respostas das questões da sua prova!!!",
+                headline: "🔒 Acesso por 1 Semana à Correção de Provas",
+                subheadline: 'Realize o pagamento de <strong>{price}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>{captureAction}</strong> e em seguida em <strong>{answerAction}</strong>.',
+                price: 'R$ 14,90',
+                captureAction: '“Clique para Corrigir”',
+                answerAction: '“Obter Resposta”',
+                paymentButton: "CLIQUE AQUI PARA PAGAR",
+                loadingCheckout: "Aguarde, gerando checkout...",
+                checkoutError: "Erro ao gerar link de pagamento.",
+                paymentCheck: "Verificando seu pagamento, aguarde um instante...",
+                paymentCheckError: "Ocorreu um problema ao verificar seu pagamento. Por favor, recarregue a página."
+            },
+            "en": {
+                pageTitle: "Get Answers for Your Test Questions!",
+                headline: "🔒 1-Week Access to AI Proofreader",
+                subheadline: 'Make the payment of <strong>{price}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>{captureAction}</strong> and then on <strong>{answerAction}</strong>.',
+                price: '$3.00 USD',
+                captureAction: '“Click to Correct”',
+                answerAction: '“Get Answer”',
+                paymentButton: "CLICK HERE TO PAY",
+                loadingCheckout: "Please wait, generating checkout...",
+                checkoutError: "Error generating payment link.",
+                paymentCheck: "Verifying your payment, please wait a moment...",
+                paymentCheckError: "There was a problem verifying your payment. Please reload the page."
+            },
+            "es": {
+                pageTitle: "¡Reciba las respuestas de las preguntas de su examen!",
+                headline: "🔒 Acceso de 1 Semana al Corrector de Pruebas IA",
+                subheadline: 'Realice el pago de <strong>{price}</strong> para desbloquear el acceso. Después del pago, regrese al sitio y conceda permiso para la cámara. Apunte la cámara a las preguntas, haga clic en <strong>{captureAction}</strong> y luego en <strong>{answerAction}</strong>.',
+                price: '$3.00 USD',
+                captureAction: '“Haga Clic para Corregir”',
+                answerAction: '“Obtener Respuesta”',
+                paymentButton: "HAGA CLIC AQUÍ PARA PAGAR",
+                loadingCheckout: "Espere, generando checkout...",
+                checkoutError: "Error al generar el enlace de pago.",
+                paymentCheck: "Verificando su pago, espere un momento...",
+                paymentCheckError: "Hubo un problema al verificar su pago. Por favor, recargue la página."
+            }
+        };
+
+        // --- FUNÇÃO DE TRADUÇÃO ---
+        function setLanguage(lang, currency, priceText) {
+            const langCode = lang.toLowerCase().startsWith('es') ? 'es' : (lang.toLowerCase().startsWith('pt') ? 'pt-br' : 'en');
+            document.documentElement.lang = lang; // Define o lang do HTML
+            
+            const dictionary = translations[langCode];
+            
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                let text = dictionary[key] || `[${key}]`;
+
+                if (key === 'subheadline') {
+                    text = text.replace('{price}', priceText)
+                               .replace('{captureAction}', dictionary.captureAction)
+                               .replace('{answerAction}', dictionary.answerAction);
+                }
+                
+                if(element.tagName === 'TITLE' || element.tagName === 'STRONG') {
+                    element.textContent = text;
+                } else {
+                    element.innerHTML = text;
+                }
+            });
+        }
+        
+        // --- FUNÇÃO PRINCIPAL ---
         function main() {
             try {
-                // --- DEFINIÇÃO DE FUNÇÕES ---
                 const APP_PAGE = "/app.html";
                 function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
                 function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
                 function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
 
-                // --- FLUXO PRINCIPAL ---
-                if (hasValidAccess()) {
-                    window.location.href = APP_PAGE;
-                    return;
-                }
+                if (hasValidAccess()) { window.location.href = APP_PAGE; return; }
 
                 document.body.classList.remove('hidden-on-load');
 
-                // Lógica de idioma e preço
                 const userLanguage = navigator.language || navigator.userLanguage;
-                let currency = 'BRL';
-                let displayText = 'R$ 14,90';
-
-                if (userLanguage !== 'pt-BR') {
-                    currency = 'USD';
-                    displayText = '$3.00 USD';
-                    document.title = "Get the answers for your test questions!";
-                }
-
-                document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
-                document.querySelector("#welcome-view strong").textContent = displayText;
-                document.querySelector("#welcome-view p").innerHTML = (currency === 'USD')
-                    ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
-                    : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
+                let currency = (userLanguage === 'pt-BR') ? 'BRL' : 'USD';
+                const langCode = currency === 'BRL' ? 'pt-br' : 'en'; // Simplificado
                 
-                // Lógica do botão de pagamento
+                setLanguage(userLanguage, currency, translations[langCode].price);
+
                 document.getElementById('start-btn').addEventListener('click', async () => {
                     const btn = document.getElementById('start-btn');
                     btn.disabled = true;
-                    btn.textContent = 'Aguarde, gerando checkout...';
-
-                    // O email não é mais necessário aqui, pois será solicitado na página do Asaas
-                    const email = "cliente@email.com"; // Usamos um placeholder
+                    btn.textContent = translations[langCode].loadingCheckout;
                     const sessionId = getSessionId();
-
                     try {
-                        const payload = { sessionId, email, currency };
+                        const payload = { sessionId, email: "cliente@email.com", currency };
                         const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                        
-                        if (!res.ok) {
-                            const err = await res.json();
-                            throw new Error(err.details || "Erro ao gerar link de pagamento.");
-                        }
-
+                        if (!res.ok) { const err = await res.json(); throw new Error(err.details || translations[langCode].checkoutError); }
                         const data = await res.json();
-                        
-                        // Redireciona o usuário para a página de pagamento do Asaas
                         window.location.href = data.checkoutUrl;
-
                     } catch (error) {
                         alert(error.message);
                         btn.disabled = false;
-                        btn.textContent = 'CLIQUE AQUI PARA PAGAR';
+                        btn.textContent = translations[langCode].paymentButton;
                     }
                 });
 
-                // Lógica para verificar o pagamento quando o usuário RETORNA do Asaas
                 const urlParams = new URLSearchParams(window.location.search);
-                const paymentSuccess = urlParams.has('success'); // Asaas redireciona para a successUrl que definimos
-                const sessionIdOnReturn = getSessionId();
-
-                if (paymentSuccess && sessionIdOnReturn) {
+                const paymentSuccess = urlParams.has('success');
+                if (paymentSuccess) {
                     const welcomeView = document.getElementById('welcome-view');
-                    welcomeView.innerHTML = '<h2>Verificando seu pagamento, aguarde um instante...</h2>';
-                    
+                    welcomeView.innerHTML = `<h2>${translations[langCode].paymentCheck}</h2>`;
                     let attempts = 0;
-                    const maxAttempts = 10; // Tenta por 30 segundos no máximo
-
                     const checkInterval = setInterval(async () => {
-                        attempts++;
-                        if (attempts > maxAttempts) {
-                            clearInterval(checkInterval);
-                            welcomeView.innerHTML = '<h2>Ocorreu um problema ao verificar seu pagamento. Por favor, recarregue a página.</h2>';
-                            return;
-                        }
-
+                        if (++attempts > 10) { clearInterval(checkInterval); welcomeView.innerHTML = `<h2>${translations[langCode].paymentCheckError}</h2>`; return; }
                         try {
-                            const r = await fetch(`/api/check-status?sessionId=${sessionIdOnReturn}`);
-                            if (r.ok) {
-                                const j = await r.json();
-                                if (j.paid) {
-                                    clearInterval(checkInterval);
-                                    setAccessAndRedirect();
-                                }
-                            }
-                        } catch(e) {
-                            // ignora erros de fetch e tenta novamente
-                            console.error("Erro na verificação, tentando novamente...");
-                        }
-                    }, 3000); // Verifica a cada 3 segundos
+                            const r = await fetch(`/api/check-status?sessionId=${getSessionId()}`);
+                            if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); setAccessAndRedirect(); } }
+                        } catch(e) { console.error("Erro na verificação, tentando novamente..."); }
+                    }, 3000);
                 }
-
             } catch (error) {
-                console.error("Ocorreu um erro crítico:", error);
+                console.error("Erro crítico:", error);
                 document.body.classList.remove('hidden-on-load');
-                document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Erro ao carregar</h1><p>${error.message}</p></div>`;
+                document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Error</h1><p>${error.message}</p></div>`;
             }
         }
 
-        // Movemos a execução para garantir que o body exista
-        if(document.body) {
-            main();
-        } else {
-            document.addEventListener('DOMContentLoaded', main);
-        }
+        if (document.body) { main(); } else { document.addEventListener('DOMContentLoaded', main); }
     </script>
 </body>
 </html>
