@@ -3,26 +3,51 @@ export default async function handler(request, response) {
         return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { sessionId, email } = request.body;
+    // Agora recebemos a moeda do frontend
+    const { sessionId, email, currency } = request.body;
     const asaasApiKey = process.env.ASAAS_API_KEY;
 
-    if (!asaasApiKey || !sessionId || !email) {
+    if (!asaasApiKey || !sessionId || !email || !currency) {
         return response.status(400).json({ error: 'Dados insuficientes ou configuração do servidor ausente.' });
     }
 
     const ASAAS_API_URL = 'https://api.asaas.com/v3';
-    // Para ambiente de testes, use: 'https://sandbox.asaas.com/api/v3'
+    let chargeValue = 14.90; // Valor padrão em BRL
+    let chargeDescription = 'Acesso por 1 semana à Correção de Prova com IA';
 
     try {
+        // --- LÓGICA DE PRECIFICAÇÃO DINÂMICA ---
+        if (currency === 'USD') {
+            // 1. Busca a taxa de câmbio atual de USD para BRL
+            console.log('Moeda USD detectada, buscando taxa de câmbio...');
+            const exchangeResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const exchangeData = await exchangeResponse.json();
+            const usdToBrlRate = exchangeData.rates.BRL;
+
+            if (!usdToBrlRate) {
+                throw new Error('Não foi possível obter a taxa de câmbio USD-BRL.');
+            }
+
+            console.log(`Taxa de câmbio atual: 1 USD = ${usdToBrlRate} BRL`);
+
+            // 2. Calcula o valor em BRL e adiciona uma pequena margem (ex: 3%) para cobrir flutuações e taxas
+            const baseValueInBrl = 3 * usdToBrlRate;
+            const finalValueInBrl = baseValueInBrl * 1.03; // Adiciona margem de 3%
+            
+            chargeValue = parseFloat(finalValueInBrl.toFixed(2));
+            chargeDescription = 'Weekly Access to AI Proofreader (Approx. $3.00 USD)';
+            console.log(`Valor a ser cobrado em BRL: ${chargeValue}`);
+        }
+        // --- FIM DA LÓGICA ---
+
+        // A lógica de criar/buscar cliente no Asaas permanece a mesma
         let customerResponse = await fetch(`${ASAAS_API_URL}/customers?email=${email}`, {
             headers: { 'access_token': asaasApiKey }
         });
         let customerData = await customerResponse.json();
-        let customerId;
+        let customerId = customerData.data && customerData.data.length > 0 ? customerData.data[0].id : null;
 
-        if (customerData.data && customerData.data.length > 0) {
-            customerId = customerData.data[0].id;
-        } else {
+        if (!customerId) {
             const newCustomerResponse = await fetch(`${ASAAS_API_URL}/customers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
@@ -35,12 +60,13 @@ export default async function handler(request, response) {
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 1);
 
+        // Usa os valores dinâmicos de `chargeValue` e `chargeDescription`
         const paymentBody = {
             customer: customerId,
             billingType: 'PIX',
-            value: 14.90,
+            value: chargeValue,
             dueDate: dueDate.toISOString().split('T')[0],
-            description: 'Acesso por 1 semana à Correção de Prova com IA',
+            description: chargeDescription,
             externalReference: sessionId,
         };
 
