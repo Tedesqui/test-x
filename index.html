@@ -4,29 +4,20 @@
     let price, currency, displayText;
 
     if (userLanguage !== 'pt-BR') {
-        // Define as variáveis para usuários internacionais
         price = 3.00;
         currency = 'USD';
         displayText = '$3.00 USD';
         document.title = "Get the answers for your test questions!";
     } else {
-        // Define as variáveis para usuários do Brasil
         price = 14.90;
         currency = 'BRL';
         displayText = 'R$ 14,90';
     }
 
-    // Atualiza os textos na página dinamicamente
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
-        document.querySelector("#welcome-view strong").textContent = displayText;
-        document.querySelector("#welcome-view p").innerHTML = (currency === 'USD') 
-            ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
-            : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
-    });
-    // --- FIM DA LÓGICA DE DETECÇÃO ---
+    // A atualização dos textos foi movida para DENTRO do fluxo principal
+    // para garantir que a página esteja visível antes de qualquer manipulação.
 
-
+    // --- FLUXO PRINCIPAL DA PÁGINA ---
     const APP_PAGE = "/app.html";
     function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
     function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
@@ -36,7 +27,19 @@
     if (hasValidAccess()) { 
         window.location.href = APP_PAGE; 
     } else {
+        // <<< CORREÇÃO AQUI >>>
+        // Esta é a linha que estava faltando. Ela torna a página visível.
         document.body.classList.remove('hidden-on-load');
+
+        // Agora que a página está visível, atualizamos os textos.
+        document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
+        document.querySelector("#welcome-view strong").textContent = displayText;
+        document.querySelector("#welcome-view p").innerHTML = (currency === 'USD') 
+            ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
+            : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
+
+
+        // O restante do código para lidar com os eventos de clique e formulário
         const startBtn = document.getElementById('start-btn');
         const pixForm = document.getElementById('pix-form');
         const pixEmailInput = document.getElementById('pix-email');
@@ -61,7 +64,6 @@
             
             const sessionId = getSessionId();
             try {
-                // Envia a moeda detectada para o backend
                 const payload = { sessionId, email, currency };
                 
                 const res = await fetch("/api/create-payment", { 
