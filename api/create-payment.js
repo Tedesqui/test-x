@@ -13,15 +13,17 @@ export default async function handler(request, response) {
   if (!accessToken || !sessionId || !email) {
     return response.status(400).json({ error: 'Dados insuficientes: sessionId, email ou configuração do servidor ausente.' });
   }
-  
+ 
   const client = new MercadoPagoConfig({ accessToken });
   const payment = new Payment(client);
 
   try {
     const paymentData = {
       body: {
-        transaction_amount: 4.90,
-        description: 'Acesso por 1 hora à Correção de Prova com IA',
+        // MODIFICAÇÃO 6: Valor da transação alterado para 14.90
+        transaction_amount: 14.90,
+        // MODIFICAÇÃO 7: Descrição da transação alterada para "1 semana"
+        description: 'Acesso por 1 semana à Correção de Prova com IA',
         payment_method_id: 'pix',
         external_reference: sessionId,
         payer: {
