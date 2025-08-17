@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title data-key="title">Correção de Prova com IA - Projeto de Jean Tedesqui</title>
+    <title>Correção de Prova com IA</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; overflow: hidden; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; }
@@ -14,99 +14,57 @@
         button:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); }
         button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
         #output-panel { background: rgba(0,0,0,0.9); padding: 15px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; border-top: 1px solid #444; }
-        #confirmation-view { display: flex; flex-direction: column; gap: 15px; }
-        #confirmation-view p { margin: 0; font-size: 0.9em; color: #ccc; }
         textarea { width: 100%; min-height: 120px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: white; font-size: 1em; padding: 10px; box-sizing: border-box; resize: vertical; }
-        textarea:focus { outline: none; border-color: #007bff; }
         #confirmation-controls { display: flex; gap: 10px; justify-content: flex-end; }
         #confirmation-controls button.confirm { background-color: #28a745; }
         #confirmation-controls button.secondary { background-color: #6c757d; }
         pre#correction-result { background-color: #2a2a2a; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
-        
-        /* ===== ESTILOS PARA O CONTADOR DE TEMPO (NOVO) ===== */
-        #access-timer {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.9em;
-            z-index: 10;
-            border: 1px solid #444;
-        }
+        #access-timer { position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9em; z-index: 10; border: 1px solid #444; }
     </style>
 </head>
 <body>
-
     <script>
         (function checkAccess() {
             const tokenString = localStorage.getItem('accessToken');
-            if (!tokenString) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!tokenString) { window.location.href = '/index.html'; return; }
             const token = JSON.parse(tokenString);
             if (Date.now() > token.expiry) {
                 localStorage.removeItem('accessToken');
-                // MODIFICAÇÃO 4: Mensagem de expiração alterada para "1 semana"
                 alert('Sua sessão de 1 semana expirou. Por favor, pague novamente.');
-                window.location.href = 'index.html';
+                window.location.href = '/index.html';
             }
         })();
     </script>
-
     <div id="main-app">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
         <div id="ui-container">
             <div id="controls">
                 <button id="zoomBtn">🔍 Zoom: 1x</button>
-                <button id="captureBtn" data-key="capture_button">📷 Clique para Corrigir</button>
+                <button id="captureBtn">📷 Clique para Corrigir</button>
             </div>
-            <div id="output-panel">
-                <div id="status-text" data-key="status_initial">📷 Aponte a câmera para o texto e capture.</div>
-            </div>
+            <div id="output-panel"><div id="status-text">📷 Aponte a câmera para o texto e capture.</div></div>
         </div>
     </div>
-
-    <div id="access-timer">
-        Tempo Restante: <span id="time-left">--s</span>
-    </div>
-    
+    <div id="access-timer">Tempo Restante: <span id="time-left">--s</span></div>
     <script>
-        // --- LÓGICA DO CONTADOR DE TEMPO (NOVO) ---
         const timerDisplay = document.getElementById('time-left');
         const tokenData = JSON.parse(localStorage.getItem('accessToken'));
-
         if (tokenData && timerDisplay) {
             const expiryTime = tokenData.expiry;
-
             const updateTimer = () => {
                 const timeLeft = expiryTime - Date.now();
-
                 if (timeLeft <= 0) {
                     timerDisplay.textContent = 'Expirado';
                     clearInterval(timerInterval);
-                    // Força o guardião a rodar de novo para redirecionar o usuário
-                    window.location.reload(); 
-                    return;
+                    window.location.reload(); return;
                 }
-                
-                // MODIFICAÇÃO 5: Lógica alterada para mostrar apenas segundos
                 const totalSeconds = Math.floor(timeLeft / 1000);
                 timerDisplay.textContent = `${totalSeconds}s`;
             };
-
-            // Atualiza o contador a cada segundo
             const timerInterval = setInterval(updateTimer, 1000);
-            // Chama uma vez imediatamente para não esperar 1 segundo para aparecer
             updateTimer();
         }
-
-        // --- LÓGICA DA APLICAÇÃO (sem alterações) ---
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -116,38 +74,49 @@
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
         const zoomLevels = [1, 1.5, 2, 3];
-        const translations = { "pt": { "title": "Correção de Prova com IA - Projeto de Jean Tedesqui", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" } };
-        let currentLang = 'pt';
-        
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: { ideal: "environment" } } };
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { throw new Error("A API de mídia não é suportada neste navegador."); }
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
                 video.srcObject = stream;
                 mediaTrack = stream.getVideoTracks()[0];
                 const capabilities = mediaTrack.getCapabilities();
                 if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; }
-            } catch (err) {
-                console.error("Erro ao iniciar a câmera:", err.name, err.message);
-                let userMessage = translations.pt.status_error_camera || "Erro ao acessar a câmera.";
-                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador. Atualize a página se já deu permissão!</small>"; }
-                else { userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`; }
-                outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
-            }
+            } catch (err) { outputPanel.innerHTML = `<div id="status-text">❌ Erro ao acessar a câmera. Verifique as permissões.</div>`; }
         }
-        function setLanguage(lang) { const langCode = lang.split('-')[0]; currentLang = translations[langCode] ? langCode : 'pt'; document.documentElement.lang = currentLang; document.querySelectorAll('[data-key]').forEach(element => { const key = element.getAttribute('data-key'); if (translations[currentLang][key]) { element.innerHTML = translations[currentLang][key]; } }); const titleElement = document.querySelector('title[data-key="title"]'); if (titleElement) { titleElement.innerText = translations[currentLang].title; } }
-        function toggleZoom() { if (!mediaTrack) return; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; if (currentZoom > capabilities.zoom.max) currentZoom = zoomLevels[0]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
-        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text" data-key="status_initial">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
-        function addRetryButton(action) { const existing = outputPanel.querySelector('.retry-button-bottom'); if (existing) return; const btn = document.createElement('button'); btn.innerText = translations[currentLang].retry_button; btn.className = 'retry-button-bottom'; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
-        async function captureAndRecognize() { captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none'; outputPanel.innerHTML = `<div id="status-text" data-key="status_reading">${translations[currentLang].status_reading}</div>`; try { const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageDataUrl }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro no OCR: ${response.status}`); } const data = await response.json(); showConfirmationView(data.text.trim()); } catch (err) { console.error("Erro no OCR:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_ocr}${err.message}</div>`; addRetryButton(resetUI); } }
-        function showConfirmationView(ocrText) { const html = `<div id="confirmation-view"><p data-key="confirm_prompt">${translations[currentLang].confirm_prompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary" data-key="retry_button">${translations[currentLang].retry_button}</button><button id="sendBtn" class="confirm" data-key="get_answer_button">${translations[currentLang].get_answer_button}</button></div></div>`; outputPanel.innerHTML = html; document.getElementById('retryBtn').addEventListener('click', resetUI); document.getElementById('sendBtn').addEventListener('click', sendForCorrection); }
-        async function sendForCorrection() { const textToProcess = document.getElementById('text-to-process').value; if (!textToProcess.trim()) { alert(translations[currentLang].empty_text_alert); return; } outputPanel.innerHTML = `<div id="status-text" data-key="status_processing">${translations[currentLang].status_processing}</div>`; try { const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro na API: ${response.status}`); } const data = await response.json(); outputPanel.innerHTML = `<h2 data-key="result_title">${translations[currentLang].result_title}</h2><pre id="correction-result">${data.resultado}</pre>`; } catch (err) { console.error("Erro na requisição:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_api}${err.message}</div>`; } finally { addRetryButton(resetUI); } }
-
+        function toggleZoom() { if (!mediaTrack || !mediaTrack.getCapabilities().zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
+        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text">📷 Aponte a câmera para o texto e capture.</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
+        async function captureAndRecognize() {
+            captureBtn.disabled = true;
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none';
+            outputPanel.innerHTML = `<div id="status-text">🧠 Lendo o texto da imagem...</div>`;
+            try {
+                const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: canvas.toDataURL('image/jpeg') }) });
+                if (!response.ok) throw new Error(`Erro no OCR: ${response.status}`);
+                const data = await response.json();
+                showConfirmationView(data.text.trim());
+            } catch (err) { outputPanel.innerHTML = `<div id="status-text">❌ Erro ao ler o texto.</div>`; addRetryButton(resetUI); }
+        }
+        function showConfirmationView(ocrText) {
+            outputPanel.innerHTML = `<div id="confirmation-view"><p><strong>Revise o texto extraído e clique para obter a resposta:</strong></p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary">Tentar Novamente</button><button id="sendBtn" class="confirm">Obter Resposta</button></div></div>`;
+            document.getElementById('retryBtn').addEventListener('click', resetUI);
+            document.getElementById('sendBtn').addEventListener('click', sendForCorrection);
+        }
+        async function sendForCorrection() {
+            const textToProcess = document.getElementById('text-to-process').value;
+            if (!textToProcess.trim()) { alert("O campo de texto não pode estar vazio."); return; }
+            outputPanel.innerHTML = `<div id="status-text">🤖 Processando com a IA...</div>`;
+            try {
+                const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: 'pt' }) });
+                if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+                const data = await response.json();
+                outputPanel.innerHTML = `<h2>✅ Resultado</h2><pre id="correction-result">${data.resultado}</pre>`;
+            } catch (err) { outputPanel.innerHTML = `<div id="status-text">❌ Erro ao obter a resposta.</div>`; } finally { addRetryButton(resetUI); }
+        }
+        function addRetryButton(action) { const btn = document.createElement('button'); btn.innerText = "Capturar Novamente"; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
         zoomBtn.addEventListener('click', toggleZoom);
         captureBtn.addEventListener('click', captureAndRecognize);
-        
-        setLanguage(navigator.language || navigator.userLanguage);
         startCamera();
     </script>
 </body>
