@@ -1,104 +1,92 @@
 <script>
-    // Envolve toda a lógica em um evento que espera a página carregar completamente.
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // --- 1. LÓGICA DE DETECÇÃO DE IDIOMA E PRECIFICAÇÃO ---
-        const userLanguage = navigator.language || navigator.userLanguage;
-        let price, currency, displayText;
+    // PASSO 1: TORNAR A PÁGINA VISÍVEL IMEDIATAMENTE.
+    // Isso garante que, aconteça o que acontecer no resto do script, você não verá mais uma tela preta.
+    document.body.classList.remove('hidden-on-load');
 
-        if (userLanguage !== 'pt-BR') {
-            price = 3.00;
-            currency = 'USD';
-            displayText = '$3.00 USD';
-            document.title = "Get the answers for your test questions!";
-        } else {
-            price = 14.90;
-            currency = 'BRL';
-            displayText = 'R$ 14,90';
-        }
+    // PASSO 2: Envolver toda a lógica em um bloco `try...catch` para capturar qualquer erro.
+    try {
 
-        // --- 2. DEFINIÇÃO DAS FUNÇÕES GLOBAIS ---
+        // --- DEFINIÇÃO DE FUNÇÕES ---
         const APP_PAGE = "/app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
         function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
         function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
         function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
-        // --- 3. FLUXO PRINCIPAL DA PÁGINA ---
+        // --- FLUXO PRINCIPAL ---
         if (hasValidAccess()) {
             window.location.href = APP_PAGE;
-            return; // Interrompe a execução se o usuário já tem acesso
-        }
+        } else {
+            // Lógica de idioma e preço
+            const userLanguage = navigator.language || navigator.userLanguage;
+            let currency = 'BRL';
+            let displayText = 'R$ 14,90';
 
-        // Torna a página visível
-        document.body.classList.remove('hidden-on-load');
-
-        // Seleciona os elementos do HTML APÓS garantir que a página carregou
-        const welcomeViewH2 = document.querySelector("#welcome-view h2");
-        const welcomeViewStrong = document.querySelector("#welcome-view strong");
-        const welcomeViewP = document.querySelector("#welcome-view p");
-        const startBtn = document.getElementById('start-btn');
-        const pixForm = document.getElementById('pix-form');
-        const pixEmailInput = document.getElementById('pix-email');
-        const generatePixBtn = document.getElementById('generate-pix-btn');
-        const pixQrCodeContainer = document.getElementById('pix-qr-code-container');
-        const qrCodeImg = document.getElementById('pix-qr-code-image');
-        const pixCopyPasteInput = document.getElementById('pix-copy-paste-code');
-        const copyPixBtn = document.getElementById('copy-pix-btn');
-        const pixStatusText = document.getElementById('pix-status-text');
-
-        // Atualiza os textos na página
-        if (welcomeViewH2) {
-            welcomeViewH2.textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
-        }
-        if (welcomeViewStrong) {
-            welcomeViewStrong.textContent = displayText;
-        }
-        if (welcomeViewP) {
-            welcomeViewP.innerHTML = (currency === 'USD')
+            if (userLanguage !== 'pt-BR') {
+                currency = 'USD';
+                displayText = '$3.00 USD';
+                document.title = "Get the answers for your test questions!";
+            }
+            
+            // Atualiza os textos da página
+            document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
+            document.querySelector("#welcome-view strong").textContent = displayText;
+            document.querySelector("#welcome-view p").innerHTML = (currency === 'USD')
                 ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
                 : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
+
+            // Configuração dos eventos
+            document.getElementById('start-btn').addEventListener('click', () => switchView('payment-view'));
+
+            document.getElementById('pix-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const email = document.getElementById('pix-email').value;
+                if (!/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(String(email).toLowerCase())) {
+                    alert("Por favor, insira um endereço de e-mail válido."); return;
+                }
+                const generatePixBtn = document.getElementById('generate-pix-btn');
+                generatePixBtn.disabled = true;
+                generatePixBtn.textContent = "Aguarde...";
+                const sessionId = getSessionId();
+                try {
+                    const payload = { sessionId, email, currency };
+                    const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
+                    const data = await res.json();
+                    document.getElementById('pix-qr-code-image').src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
+                    document.getElementById('pix-copy-paste-code').value = data.qrCode;
+                    document.getElementById('pix-form').classList.add('hidden');
+                    document.getElementById('pix-qr-code-container').classList.remove('hidden');
+                    const pixStatusText = document.getElementById('pix-status-text');
+                    const checkInterval = setInterval(async () => {
+                        try {
+                            const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
+                            if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); pixStatusText.textContent = "Pagamento Aprovado! Redirecionando..."; pixStatusText.classList.remove('animate-pulse'); setTimeout(setAccessAndRedirect, 1500); } }
+                        } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
+                    }, 4000);
+                } catch (error) {
+                    alert(error.message);
+                    generatePixBtn.disabled = false;
+                    generatePixBtn.textContent = "Gerar QR Code PIX";
+                }
+            });
+
+            document.getElementById('copy-pix-btn').addEventListener('click', () => {
+                const copyPixBtn = document.getElementById('copy-pix-btn');
+                const pixCopyPasteInput = document.getElementById('pix-copy-paste-code');
+                pixCopyPasteInput.select();
+                document.execCommand('copy');
+                copyPixBtn.textContent = 'Copiado!';
+                setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
+            });
         }
 
-        // Adiciona os eventos
-        startBtn.addEventListener('click', () => switchView('payment-view'));
-
-        pixForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const email = pixEmailInput.value;
-            if (!/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(String(email).toLowerCase())) {
-                alert("Por favor, insira um endereço de e-mail válido."); return;
-            }
-            generatePixBtn.disabled = true;
-            generatePixBtn.textContent = "Aguarde...";
-            const sessionId = getSessionId();
-            try {
-                const payload = { sessionId, email, currency };
-                const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
-                const data = await res.json();
-                qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
-                pixCopyPasteInput.value = data.qrCode;
-                pixForm.classList.add('hidden');
-                pixQrCodeContainer.classList.remove('hidden');
-                const checkInterval = setInterval(async () => {
-                    try {
-                        const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
-                        if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); pixStatusText.textContent = "Pagamento Aprovado! Redirecionando..."; pixStatusText.classList.remove('animate-pulse'); setTimeout(setAccessAndRedirect, 1500); } }
-                    } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
-                }, 4000);
-            } catch (error) {
-                alert(error.message);
-                generatePixBtn.disabled = false;
-                generatePixBtn.textContent = "Gerar QR Code PIX";
-            }
-        });
-
-        copyPixBtn.addEventListener('click', () => {
-            pixCopyPasteInput.select();
-            document.execCommand('copy');
-            copyPixBtn.textContent = 'Copiado!';
-            setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
-        });
-    });
+    } catch (error) {
+        // PASSO 3: Se qualquer coisa dentro do `try` falhar, este bloco será executado.
+        console.error("Ocorreu um erro crítico na inicialização da página:", error);
+        alert("Ocorreu um erro ao carregar os componentes da página. Verifique o console para mais detalhes.");
+        // Isso também vai garantir que a página fique visível, mesmo com o erro,
+        // para que possamos depurar.
+        document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Erro ao carregar</h1><p>Ocorreu um erro no script da página. Verifique o console do desenvolvedor (F12) para mais detalhes. Erro: ${error.message}</p></div>`;
+    }
 </script>
