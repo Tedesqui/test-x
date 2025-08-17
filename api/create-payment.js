@@ -20,8 +20,6 @@ export default async function handler(request, response) {
         const ASAAS_API_URL = 'https://api.asaas.com/v3';
         let customerId;
 
-        // --- LÓGICA ROBUSTA DE CRIAÇÃO/BUSCA DE CLIENTE ---
-        // 1. Busca o cliente pelo e-mail para evitar duplicatas.
         const searchCustomerResponse = await fetch(`${ASAAS_API_URL}/customers?email=${email}`, {
             headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
         });
@@ -29,49 +27,42 @@ export default async function handler(request, response) {
 
         if (searchCustomerData.data && searchCustomerData.data.length > 0) {
             customerId = searchCustomerData.data[0].id;
-            console.log(`Cliente encontrado com ID: ${customerId}`);
         } else {
-            // 2. Se não encontrar, cria um novo cliente com a flag correta.
-            console.log(`Cliente não encontrado. Criando novo cliente para o email: ${email}`);
-            
-            const newCustomerBody = {
-                name: email.split('@')[0], // Pega o nome do email como padrão
-                email: email,
-            };
-
-            // **AQUI ESTÁ A MÁGICA**
-            // Se a moeda não for BRL, marcamos o cliente como estrangeiro.
+            const newCustomerBody = { name: email.split('@')[0], email: email };
             if (currency !== 'BRL') {
                 newCustomerBody.foreignCustomer = true;
             }
-            
             const createCustomerResponse = await fetch(`${ASAAS_API_URL}/customers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
                 body: JSON.stringify(newCustomerBody)
             });
-
-            if (!createCustomerResponse.ok) {
-                const errorDetails = await createCustomerResponse.json();
-                console.error("Erro ao criar cliente no Asaas:", errorDetails);
-                throw new Error("Não foi possível registrar o cliente no sistema de pagamentos.");
-            }
-
+            if (!createCustomerResponse.ok) throw new Error("Não foi possível registrar o cliente.");
             const newCustomerData = await createCustomerResponse.json();
             customerId = newCustomerData.id;
-            console.log(`Novo cliente estrangeiro criado com ID: ${customerId}`);
         }
         
-        // --- LÓGICA DO LINK DE PAGAMENTO (agora usando o customerId) ---
         let chargeValue = 14.90;
-        let linkName = 'Acesso Semanal / Weekly Access';
-        let linkDescription = 'Acesso de 1 semana à ferramenta de IA. / 1-week access to the AI tool.';
+        const linkName = 'Weekly Access / Acesso Semanal';
+        const linkDescription = '1-week access to the AI tool. / Acesso de 1 semana à ferramenta de IA.';
 
         if (currency === 'USD') {
             const exchangeResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
             const exchangeData = await exchangeResponse.json();
             chargeValue = parseFloat((3 * exchangeData.rates.BRL * 1.03).toFixed(2));
         }
+
+        // --- LÓGICA DINÂMICA DE FORMAS DE PAGAMENTO ---
+        let allowedTypes;
+
+        if (currency === 'BRL') {
+            // Para clientes no Brasil, oferecemos todas as opções, com PIX primeiro.
+            allowedTypes = ["PIX", "CREDIT_CARD", "BOLETO"];
+        } else {
+            // Para clientes internacionais, oferecemos APENAS Cartão de Crédito para evitar confusão.
+            allowedTypes = ["CREDIT_CARD"];
+        }
+        // --- FIM DA LÓGICA ---
 
         const linkBody = {
             name: linkName,
@@ -80,8 +71,8 @@ export default async function handler(request, response) {
             chargeType: "DETACHED",
             dueDateLimitDays: 2,
             billingType: "UNDEFINED",
-            allowedBillingTypes: ["PIX", "CREDIT_CARD", "BOLETO"],
-            customer: customerId, // Associamos o link ao cliente correto
+            allowedBillingTypes: allowedTypes, // Usando a variável dinâmica
+            customer: customerId,
             callback: {
                 autoRedirect: true,
                 successUrl: `https://${request.headers.host}`,
@@ -96,7 +87,6 @@ export default async function handler(request, response) {
 
         if (!linkResponse.ok) {
             const errorDetails = await linkResponse.json();
-            console.error("Erro ao criar link de pagamento no Asaas:", errorDetails);
             throw new Error(errorDetails.errors?.[0]?.description || 'Falha ao gerar link de pagamento no Asaas.');
         }
 
