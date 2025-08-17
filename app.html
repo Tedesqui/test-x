@@ -51,7 +51,8 @@
             const token = JSON.parse(tokenString);
             if (Date.now() > token.expiry) {
                 localStorage.removeItem('accessToken');
-                alert('Sua sessão de 1 hora expirou. Por favor, pague novamente.');
+                // MODIFICAÇÃO 4: Mensagem de expiração alterada para "1 semana"
+                alert('Sua sessão de 1 semana expirou. Por favor, pague novamente.');
                 window.location.href = 'index.html';
             }
         })();
@@ -72,7 +73,7 @@
     </div>
 
     <div id="access-timer">
-        Tempo Restante: <span id="time-left">--:--</span>
+        Tempo Restante: <span id="time-left">--s</span>
     </div>
     
     <script>
@@ -94,11 +95,9 @@
                     return;
                 }
                 
-                const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
-                const seconds = Math.floor((timeLeft / 1000) % 60);
-
-                // Formata para sempre ter dois dígitos (ex: 05:09)
-                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                // MODIFICAÇÃO 5: Lógica alterada para mostrar apenas segundos
+                const totalSeconds = Math.floor(timeLeft / 1000);
+                timerDisplay.textContent = `${totalSeconds}s`;
             };
 
             // Atualiza o contador a cada segundo
