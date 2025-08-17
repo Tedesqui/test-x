@@ -46,9 +46,12 @@ export default async function handler(request, response) {
             chargeType: "DETACHED",
             dueDateLimitDays: 2,
 
-            // --- ALTERAÇÃO AQUI ---
-            // Removemos "billingType" e adicionamos "allowedBillingTypes"
-            // para permitir apenas PIX e Cartão de Crédito.
+            // --- CORREÇÃO AQUI ---
+            // Reintroduzimos o "billingType" como UNDEFINED.
+            // A API do Asaas exige este campo para habilitar a escolha do cliente.
+            "billingType": "UNDEFINED",
+            
+            // E mantemos "allowedBillingTypes" para filtrar as opções disponíveis.
             "allowedBillingTypes": [
                 "PIX",
                 "CREDIT_CARD"
