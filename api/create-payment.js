@@ -1,9 +1,6 @@
 export default async function handler(request, response) {
-    // --- PONTO DE DEPURAÇÃO NO BACKEND ---
     console.log("--- FUNÇÃO /api/create-payment INVOCADA ---");
-    console.log("Método da Requisição:", request.method);
     console.log("Corpo da Requisição (request.body):", request.body);
-    // ----------------------------------------
 
     if (request.method !== 'POST') {
         return response.status(405).json({ error: 'Method Not Allowed' });
@@ -16,43 +13,73 @@ export default async function handler(request, response) {
     }
 
     try {
-        // Usamos um fallback para garantir que o body não seja nulo
         const { sessionId, email, currency } = request.body || {};
-
-        // --- PONTO DE DEPURAÇÃO NO BACKEND ---
         console.log(`Moeda recebida e processada pelo backend: ${currency}`);
-        // ----------------------------------------
         
         if (!sessionId || !email || !currency) {
             console.error("Dados insuficientes no corpo da requisição:", request.body);
             return response.status(400).json({ error: 'Dados insuficientes na requisição.' });
         }
 
-        // (O resto do seu código continua aqui, sem alterações...)
         const ASAAS_API_URL = 'https://api.asaas.com/v3';
         let customerId;
-        // ... Lógica para buscar/criar cliente ...
-        // ...
+
+        const searchCustomerResponse = await fetch(`${ASAAS_API_URL}/customers?email=${email}`, {
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+        });
+        const searchCustomerData = await searchCustomerResponse.json();
+
+        if (searchCustomerData.data && searchCustomerData.data.length > 0) {
+            customerId = searchCustomerData.data[0].id;
+        } else {
+            const newCustomerBody = { name: email.split('@')[0], email: email };
+            if (currency !== 'BRL') {
+                newCustomerBody.foreignCustomer = true;
+            }
+            const createCustomerResponse = await fetch(`${ASAAS_API_URL}/customers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+                body: JSON.stringify(newCustomerBody)
+            });
+            if (!createCustomerResponse.ok) throw new Error("Não foi possível registrar o cliente.");
+            const newCustomerData = await createCustomerResponse.json();
+            customerId = newCustomerData.id;
+        }
+        
         let chargeValue = 14.90;
-        // ... Lógica de cálculo de valor ...
-        // ...
+        const linkName = 'Weekly Access / Acesso Semanal';
+        const linkDescription = '1-week access to the AI tool. / Acesso de 1 semana à ferramenta de IA.';
+
+        if (currency === 'USD') {
+            const exchangeResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const exchangeData = await exchangeResponse.json();
+            chargeValue = parseFloat((3 * exchangeData.rates.BRL * 1.03).toFixed(2));
+        }
 
         let allowedTypes;
         if (currency === 'BRL') {
             allowedTypes = ["PIX", "CREDIT_CARD", "BOLETO"];
-            console.log("Lógica BRL acionada. Métodos permitidos:", allowedTypes);
         } else {
             allowedTypes = ["CREDIT_CARD"];
-            console.log("Lógica para Estrangeiro (não-BRL) acionada. Métodos permitidos:", allowedTypes);
         }
         
         const linkBody = {
-            // ... corpo do link de pagamento ...
+            name: linkName,
+            description: linkDescription,
+            value: chargeValue,
+            chargeType: "DETACHED",
+            
+            // AQUI ESTÁ A CORREÇÃO QUE FOI PERDIDA E REINTRODUZIDA
+            dueDateLimitDays: 2,
+
+            billingType: "UNDEFINED",
             allowedBillingTypes: allowedTypes,
-            // ...
+            customer: customerId,
+            callback: {
+                autoRedirect: true,
+                successUrl: `https://${request.headers.host}`,
+            }
         };
-        // ... resto da função
-        // ...
 
         const linkResponse = await fetch(`${ASAAS_API_URL}/paymentLinks`, {
             method: 'POST',
@@ -66,7 +93,10 @@ export default async function handler(request, response) {
         }
 
         const result = await linkResponse.json();
-        return response.status(201).json({ checkoutUrl: result.url });
+        
+        return response.status(201).json({
+            checkoutUrl: result.url,
+        });
 
     } catch (error) {
         console.error("Erro 500 na função create-payment:", error);
