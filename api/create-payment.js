@@ -3,42 +3,60 @@ export default async function handler(request, response) {
         return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { sessionId, email, currency } = request.body;
     const asaasApiKey = process.env.ASAAS_API_KEY;
 
-    if (!asaasApiKey || !sessionId || !email || !currency) {
-        return response.status(400).json({ error: 'Dados insuficientes ou configuração do servidor ausente.' });
+    if (!asaasApiKey) {
+        console.error("ERRO CRÍTICO: A variável de ambiente ASAAS_API_KEY não foi encontrada.");
+        return response.status(500).json({
+            error: "Erro de configuração do servidor.",
+            details: "A chave de API para pagamentos não está configurada."
+        });
     }
 
-    const ASAAS_API_URL = 'https://api.asaas.com/v3/paymentLinks';
-    let chargeValue = 14.90;
-    let linkName = 'Acesso Semanal - Correção IA';
-
     try {
+        const { sessionId, email, currency } = request.body;
+
+        if (!sessionId || !email || !currency) {
+            return response.status(400).json({ error: 'Dados insuficientes na requisição (sessionId, email, currency).' });
+        }
+
+        const ASAAS_API_URL = 'https://api.asaas.com/v3/paymentLinks';
+        let chargeValue = 14.90;
+        let linkName = 'Acesso Semanal - Correção IA';
+
         if (currency === 'USD') {
             const exchangeResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            if (!exchangeResponse.ok) throw new Error('Falha ao buscar dados da API de câmbio.');
             const exchangeData = await exchangeResponse.json();
             const usdToBrlRate = exchangeData.rates.BRL;
-            if (!usdToBrlRate) throw new Error('Não foi possível obter a taxa de câmbio.');
-            
+
+            if (!usdToBrlRate) throw new Error('Não foi possível obter a taxa de câmbio USD-BRL.');
+
             const baseValueInBrl = 3 * usdToBrlRate;
             chargeValue = parseFloat((baseValueInBrl * 1.03).toFixed(2));
             linkName = 'Weekly Access - AI Proofreader';
         }
 
+        const successUrl = `https://${request.headers.host}`;
+
         const linkBody = {
             name: linkName,
             description: 'Acesso por 1 semana à ferramenta de correção de provas com IA.',
             value: chargeValue,
-            billingType: "UNDEFINED", // Permite que o cliente escolha PIX ou Cartão de Crédito
-            chargeType: "DETACHED", // Cobrança avulsa
-            // Após o pagamento, Asaas adicionará '?payment=ID_DO_PAGAMENTO' à URL
+            billingType: "UNDEFINED",
+            chargeType: "DETACHED",
+            
+            // --- CORREÇÃO AQUI ---
+            // Removemos o "dueDate" e adicionamos "dueDateLimitDays".
+            // O link de pagamento será válido por 2 dias úteis.
+            "dueDateLimitDays": 2,
+            
             "callback": {
                 "autoRedirect": true,
-                "successUrl": `https://${request.headers.host}/index.html` 
+                "successUrl": successUrl,
             },
-            // Vamos associar o cliente e a sessão na notificação que o Asaas nos enviará (webhook)
             "notification": {
+                "enabled": true,
                 "payload": JSON.stringify({ sessionId, email })
             }
         };
@@ -51,19 +69,21 @@ export default async function handler(request, response) {
 
         if (!linkResponse.ok) {
             const errorDetails = await linkResponse.json();
-            console.error("Erro ao criar link de pagamento no Asaas:", errorDetails);
-            throw new Error('Falha ao gerar link de pagamento no Asaas.');
+            console.error("Erro recebido da API do Asaas:", JSON.stringify(errorDetails, null, 2));
+            throw new Error(errorDetails.errors?.[0]?.description || 'Falha ao gerar link de pagamento no Asaas.');
         }
 
         const result = await linkResponse.json();
         
-        // Retorna a URL do checkout para o frontend redirecionar o usuário
-        response.status(201).json({
+        return response.status(201).json({
             checkoutUrl: result.url,
         });
 
     } catch (error) {
-        console.error("Erro no processo de criação de pagamento Asaas:", error);
-        response.status(500).json({ error: 'Falha ao criar pagamento.', details: error.message });
+        console.error("Erro 500 na função create-payment:", error);
+        return response.status(500).json({
+            error: "Ocorreu um erro interno no servidor.",
+            details: error.message
+        });
     }
 }
