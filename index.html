@@ -5,28 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receba as respostas das questões da sua prova!!!</title>
     <style>
-        body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
-        .hidden-on-load { visibility: hidden; } /* Usamos visibility em vez de display para evitar quebras de layout */
-        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; margin-top: -250px; }
-        .view.active { display: flex; }
-        #start-btn, #generate-pix-btn { width: 100%; color: white; font-weight: bold; font-size: 18px; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1.5rem; }
-        #start-btn { background-color: #22c55e; }
-        #start-btn:hover { background-color: #16a34a; }
-        #pix-form p, #pix-qr-code-container p { font-size: 0.9em; color: #ccc; margin-bottom: 1rem; }
-        #pix-email, #pix-copy-paste-code { width: 100%; padding: 0.75rem; border: 1px solid #4a5568; border-radius: 0.375rem; background-color: #2d3748; color: white; box-sizing: border-box; }
-        #generate-pix-btn { background-color: #009ee3; margin-top: 1rem; }
-        #generate-pix-btn:hover { background-color: #0089cc; }
-        #generate-pix-btn:disabled { background-color: #555; cursor: wait; }
-        #pix-qr-code-container { margin-top: 1.5rem; }
-        #pix-qr-code-image { margin: 0 auto; border: 4px solid white; border-radius: 0.5rem; max-width: 280px; }
-        .input-group { display: flex; margin-top: 1rem; }
-        #pix-copy-paste-code { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
-        #copy-pix-btn { background-color: #22c55e; font-size: 0.9em; font-weight: bold; color: white; padding: 0.75rem; border: none; border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s; }
-        #copy-pix-btn:hover { background-color: #16a34a; }
-        @keyframes pulse { 50% { opacity: .5; } }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .hidden { display: none; }
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #121212; 
+            color: white; 
+        }
+        .hidden-on-load { 
+            visibility: hidden; 
+        }
+        .container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            text-align: center; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+        .view { 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+            max-width: 420px; 
+            margin-top: -250px; 
+        }
+        .view.active { 
+            display: flex; 
+        }
+        #start-btn { 
+            width: 100%; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 18px; 
+            padding: 0.75rem 1rem; 
+            border: none; 
+            border-radius: 0.5rem; 
+            cursor: pointer; 
+            transition: background-color 0.2s; 
+            margin-top: 1.5rem; 
+            background-color: #22c55e; 
+        }
+        #start-btn:hover:not(:disabled) { 
+            background-color: #16a34a; 
+        }
+        #start-btn:disabled {
+            background-color: #555;
+            cursor: wait;
+        }
+        .hidden { 
+            display: none; 
+        }
     </style>
 </head>
 <body class="hidden-on-load">
@@ -36,40 +68,25 @@
             <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.</p>
             <button id="start-btn">CLIQUE AQUI PARA PAGAR</button>
         </div>
-        <div id="payment-view" class="view">
-            <form id="pix-form">
-                <p>Para gerar o QR Code, informe seu e-mail.</p>
-                <input type="email" id="pix-email" placeholder="seuemail@exemplo.com" required>
-                <button type="submit" id="generate-pix-btn">Gerar QR Code PIX</button>
-            </form>
-            <div id="pix-qr-code-container" class="hidden">
-                <p style="font-weight: 600;">Escaneie o QR Code ou use o Copia e Cola:</p>
-                <img id="pix-qr-code-image" src="" alt="QR Code PIX">
-                <div class="input-group">
-                    <input type="text" id="pix-copy-paste-code" readonly>
-                    <button type="button" id="copy-pix-btn">Copiar</button>
-                </div>
-                <p id="pix-status-text" class="animate-pulse">Aguardando pagamento...</p>
-            </div>
         </div>
-    </div>
 
     <script>
-        // Como o script está no final, não precisamos mais do 'DOMContentLoaded'.
-        // O navegador já leu todo o HTML acima quando chegar aqui.
+        function main() {
+            try {
+                // --- DEFINIÇÃO DE FUNÇÕES ---
+                const APP_PAGE = "/app.html";
+                function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
+                function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
+                function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
 
-        try {
-            // --- DEFINIÇÃO DE FUNÇÕES ---
-            const APP_PAGE = "/app.html";
-            function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
-            function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-            function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
-            function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
+                // --- FLUXO PRINCIPAL ---
+                if (hasValidAccess()) {
+                    window.location.href = APP_PAGE;
+                    return;
+                }
 
-            // --- FLUXO PRINCIPAL ---
-            if (hasValidAccess()) {
-                window.location.href = APP_PAGE;
-            } else {
+                document.body.classList.remove('hidden-on-load');
+
                 // Lógica de idioma e preço
                 const userLanguage = navigator.language || navigator.userLanguage;
                 let currency = 'BRL';
@@ -81,65 +98,91 @@
                     document.title = "Get the answers for your test questions!";
                 }
 
-                // Atualiza os textos da página
                 document.querySelector("#welcome-view h2").textContent = (currency === 'USD') ? '🔒 1-Week Access to AI Proofreader' : '🔒 Acesso por 1 Semana à Correção de Provas';
                 document.querySelector("#welcome-view strong").textContent = displayText;
                 document.querySelector("#welcome-view p").innerHTML = (currency === 'USD')
                     ? `Make the payment of <strong>${displayText}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>“Click to Correct”</strong> and then on <strong>“Get Answer”</strong>.`
                     : `Realize o pagamento de <strong>${displayText}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>“Clique para Corrigir”</strong> e em seguida em <strong>“Obter Resposta”</strong>.`;
+                
+                // Lógica do botão de pagamento
+                document.getElementById('start-btn').addEventListener('click', async () => {
+                    const btn = document.getElementById('start-btn');
+                    btn.disabled = true;
+                    btn.textContent = 'Aguarde, gerando checkout...';
 
-                // Configuração dos eventos
-                document.getElementById('start-btn').addEventListener('click', () => switchView('payment-view'));
-
-                document.getElementById('pix-form').addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    const email = document.getElementById('pix-email').value;
-                    if (!/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(String(email).toLowerCase())) {
-                        alert("Por favor, insira um endereço de e-mail válido."); return;
-                    }
-                    const generatePixBtn = document.getElementById('generate-pix-btn');
-                    generatePixBtn.disabled = true;
-                    generatePixBtn.textContent = "Aguarde...";
+                    // O email não é mais necessário aqui, pois será solicitado na página do Asaas
+                    const email = "cliente@email.com"; // Usamos um placeholder
                     const sessionId = getSessionId();
+
                     try {
                         const payload = { sessionId, email, currency };
                         const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                        if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
+                        
+                        if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.details || "Erro ao gerar link de pagamento.");
+                        }
+
                         const data = await res.json();
-                        document.getElementById('pix-qr-code-image').src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
-                        document.getElementById('pix-copy-paste-code').value = data.qrCode;
-                        document.getElementById('pix-form').classList.add('hidden');
-                        document.getElementById('pix-qr-code-container').classList.remove('hidden');
-                        const pixStatusText = document.getElementById('pix-status-text');
-                        const checkInterval = setInterval(async () => {
-                            try {
-                                const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
-                                if (r.ok) { const j = await r.json(); if (j.paid) { clearInterval(checkInterval); pixStatusText.textContent = "Pagamento Aprovado! Redirecionando..."; pixStatusText.classList.remove('animate-pulse'); setTimeout(setAccessAndRedirect, 1500); } }
-                            } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
-                        }, 4000);
+                        
+                        // Redireciona o usuário para a página de pagamento do Asaas
+                        window.location.href = data.checkoutUrl;
+
                     } catch (error) {
                         alert(error.message);
-                        generatePixBtn.disabled = false;
-                        generatePixBtn.textContent = "Gerar QR Code PIX";
+                        btn.disabled = false;
+                        btn.textContent = 'CLIQUE AQUI PARA PAGAR';
                     }
                 });
 
-                document.getElementById('copy-pix-btn').addEventListener('click', () => {
-                    const copyPixBtn = document.getElementById('copy-pix-btn');
-                    const pixCopyPasteInput = document.getElementById('pix-copy-paste-code');
-                    pixCopyPasteInput.select();
-                    document.execCommand('copy');
-                    copyPixBtn.textContent = 'Copiado!';
-                    setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
-                });
+                // Lógica para verificar o pagamento quando o usuário RETORNA do Asaas
+                const urlParams = new URLSearchParams(window.location.search);
+                const paymentSuccess = urlParams.has('success'); // Asaas redireciona para a successUrl que definimos
+                const sessionIdOnReturn = getSessionId();
 
-                // Finalmente, tornamos a página visível.
+                if (paymentSuccess && sessionIdOnReturn) {
+                    const welcomeView = document.getElementById('welcome-view');
+                    welcomeView.innerHTML = '<h2>Verificando seu pagamento, aguarde um instante...</h2>';
+                    
+                    let attempts = 0;
+                    const maxAttempts = 10; // Tenta por 30 segundos no máximo
+
+                    const checkInterval = setInterval(async () => {
+                        attempts++;
+                        if (attempts > maxAttempts) {
+                            clearInterval(checkInterval);
+                            welcomeView.innerHTML = '<h2>Ocorreu um problema ao verificar seu pagamento. Por favor, recarregue a página.</h2>';
+                            return;
+                        }
+
+                        try {
+                            const r = await fetch(`/api/check-status?sessionId=${sessionIdOnReturn}`);
+                            if (r.ok) {
+                                const j = await r.json();
+                                if (j.paid) {
+                                    clearInterval(checkInterval);
+                                    setAccessAndRedirect();
+                                }
+                            }
+                        } catch(e) {
+                            // ignora erros de fetch e tenta novamente
+                            console.error("Erro na verificação, tentando novamente...");
+                        }
+                    }, 3000); // Verifica a cada 3 segundos
+                }
+
+            } catch (error) {
+                console.error("Ocorreu um erro crítico:", error);
                 document.body.classList.remove('hidden-on-load');
+                document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Erro ao carregar</h1><p>${error.message}</p></div>`;
             }
-        } catch (error) {
-            console.error("Ocorreu um erro crítico na inicialização da página:", error);
-            document.body.classList.remove('hidden-on-load');
-            document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Erro ao carregar</h1><p>Ocorreu um erro no script da página. Erro: ${error.message}</p></div>`;
+        }
+
+        // Movemos a execução para garantir que o body exista
+        if(document.body) {
+            main();
+        } else {
+            document.addEventListener('DOMContentLoaded', main);
         }
     </script>
 </body>
