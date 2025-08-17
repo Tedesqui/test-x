@@ -1,14 +1,9 @@
 {
-  "name": "meu-app-ia-pagamento",
+  "name": "projeto-ia-correcao-provas-asaas",
   "version": "1.0.0",
-  "description": "Meu aplicativo com Mercado Pago, OpenAI e AWS Textract",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "description": "Projeto de correção de provas com IA e pagamento via Asaas.",
   "dependencies": {
-    "mercadopago": "^2.0.10",
-    "openai": "^4.0.0",
-    "@aws-sdk/client-textract": "^3.609.0"
+    "@aws-sdk/client-textract": "^3.609.0",
+    "openai": "^4.0.0"
   }
 }
