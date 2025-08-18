@@ -1,9 +1,10 @@
 {
-  "name": "projeto-ia-correcao-provas-asaas",
+  "name": "projeto-ia-correcao-provas-stripe",
   "version": "1.0.0",
-  "description": "Projeto de correção de provas com IA e pagamento via Asaas.",
+  "description": "Projeto de correção de provas com IA e pagamento via Stripe.",
   "dependencies": {
     "@aws-sdk/client-textract": "^3.609.0",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "stripe": "^16.2.0"
   }
 }
