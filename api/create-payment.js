@@ -17,9 +17,11 @@ export default async function handler(request, response) {
         const cancelUrl = `https://${request.headers.host}`;
 
         let lineItem;
-        let paymentMethodTypes; // Variável para as formas de pagamento
+        
+        // A variável para as formas de pagamento agora é fixa
+        const paymentMethodTypes = ['card'];
 
-        // Define o item de compra E as formas de pagamento com base na moeda
+        // Define o item de compra com base na moeda
         if (currency === 'BRL') {
             lineItem = {
                 price_data: {
@@ -32,8 +34,6 @@ export default async function handler(request, response) {
                 },
                 quantity: 1,
             };
-            // Para clientes no Brasil, habilitamos Cartão e Pix
-            paymentMethodTypes = ['card', 'pix'];
         } else {
             lineItem = {
                 price_data: {
@@ -46,13 +46,11 @@ export default async function handler(request, response) {
                 },
                 quantity: 1,
             };
-            // Para clientes internacionais, apenas Cartão
-            paymentMethodTypes = ['card'];
         }
 
         // Cria a Sessão de Checkout no Stripe
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: paymentMethodTypes, // Usando a variável dinâmica
+            payment_method_types: paymentMethodTypes, // Sempre será apenas ['card']
             line_items: [lineItem],
             mode: 'payment',
             success_url: successUrl,
