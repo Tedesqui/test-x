@@ -47,14 +47,13 @@ export default async function handler(request, response) {
 
         // Cria a Sessão de Checkout no Stripe
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'], // Aceita apenas cartão por padrão
+            payment_method_types: ['card'],
             line_items: [lineItem],
             mode: 'payment',
             success_url: successUrl,
             cancel_url: cancelUrl,
             customer_email: email,
             metadata: {
-                // Guardamos nossa sessionId interna para referência
                 internal_session_id: sessionId
             }
         });
