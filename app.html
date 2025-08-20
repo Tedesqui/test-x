@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title data-key="title">Correção de Prova com IA - Projeto de Jean Tedesqui</title>
+    <title data-key="title">Correção de Prova com IA</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; overflow: hidden; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; }
@@ -116,7 +116,7 @@
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
         const zoomLevels = [1, 1.5, 2, 3];
-        const translations = { "pt": { "title": "Correção de Prova com IA - Projeto de Jean Tedesqui", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" } };
+        const translations = { "pt": { "title": "Correção de Prova com IA", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" } };
         let currentLang = 'pt';
         
         async function startCamera() {
