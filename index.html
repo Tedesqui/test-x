@@ -3,123 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="pageTitle">Receba as respostas das questões da sua prova!!!</title>
+    <title>Receba as respostas das questões da sua prova!!!</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
-        .hidden-on-load { visibility: hidden; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; margin-top: -250px; }
+        
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+            margin-top: -250px; /* Move o conteúdo 250px para cima */
+        }
         .view.active { display: flex; }
-        #start-btn { width: 100%; color: white; font-weight: bold; font-size: 18px; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1.5rem; background-color: #22c55e; }
-        #start-btn:hover:not(:disabled) { background-color: #16a34a; }
-        #start-btn:disabled { background-color: #555; cursor: wait; }
+
+        /* Estilo do Botão Principal (CLIQUE AQUI) */
+        #start-btn {
+            width: 100%;
+            background-color: #22c55e; /* Cor verde */
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1.5rem;
+        }
+        #start-btn:hover { background-color: #16a34a; }
+
+        /* Estilos do Formulário e QR Code */
+        #pix-form p, #pix-qr-code-container p {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+
+        #pix-email, #pix-copy-paste-code {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #4a5568;
+            border-radius: 0.375rem;
+            background-color: #2d3748;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        /* ===== MUDANÇA REALIZADA AQUI ===== */
+        #generate-pix-btn {
+            width: 100%;
+            background-color: #009ee3; /* Cor azul para o segundo botão */
+            color: white;
+            font-weight: bold;
+            font-size: 18px; /* Fonte aumentada em 50% (base 16px -> 24px) */
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        /* ===== FIM DA MUDANÇA ===== */
+        
+        #generate-pix-btn:hover { background-color: #0089cc; }
+        #generate-pix-btn:disabled { background-color: #555; cursor: wait; }
+
+        #pix-qr-code-container { margin-top: 1.5rem; }
+        #pix-qr-code-image {
+            margin: 0 auto;
+            border: 4px solid white;
+            border-radius: 0.5rem;
+            max-width: 280px;
+        }
+
+        .input-group { display: flex; margin-top: 1rem; }
+        #pix-copy-paste-code { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
+        
+        #copy-pix-btn {
+            background-color: #22c55e;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #copy-pix-btn:hover { background-color: #16a34a; }
+
+        @keyframes pulse { 50% { opacity: .5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        .hidden { display: none; }
+        body.hidden-on-load { display: none; }
     </style>
 </head>
 <body class="hidden-on-load">
+
     <div class="container">
+        
         <div id="welcome-view" class="view active">
-            <h2 data-i18n="headline">🔒 Acesso por 1 Semana à Correção de Provas</h2>
-            <p data-i18n="subheadline" style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong data-i18n="price">R$ 14,90</strong> para liberar o acesso...</p>
-            <button id="start-btn" data-i18n="paymentButton">CLIQUE AQUI PARA PAGAR</button>
+            <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
+            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após realizar o pagamento, retorne ao site e dê permissão para o site usar a câmera do seu celular. Com a câmera aberta dentro do site, aponte para as questões e clique no botão <strong>“Clique para Corrigir”</strong> para o site identificar o texto, e em seguida clique em <strong>“Obter Resposta”</strong>.</p>
+            <button id="start-btn">CLIQUE AQUI</button>
         </div>
+
+        <div id="payment-view" class="view">
+            <form id="pix-form">
+                <p>Para gerar o QR Code, informe seu e-mail.</p>
+                <input type="email" id="pix-email" placeholder="seuemail@exemplo.com" required>
+                <button type="submit" id="generate-pix-btn">Gerar QR Code PIX</button>
+            </form>
+
+            <div id="pix-qr-code-container" class="hidden">
+                <p style="font-weight: 600;">Escaneie o QR Code ou use o Copia e Cola:</p>
+                <img id="pix-qr-code-image" src="" alt="QR Code PIX">
+                <div class="input-group">
+                    <input type="text" id="pix-copy-paste-code" readonly>
+                    <button type="button" id="copy-pix-btn">Copiar</button>
+                </div>
+                <p id="pix-status-text" class="animate-pulse">Aguardando pagamento...</p>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const translations = {
-            "pt-br": { pageTitle: "Receba as respostas das questões da sua prova!!!", headline: "🔒 Acesso por 1 Semana à Correção de Provas", subheadline: 'Realize o pagamento de <strong>{price}</strong> para liberar o acesso. Após o pagamento, retorne e dê permissão para o site usar sua câmera. Aponte para as questões, clique em <strong>{captureAction}</strong> e em seguida em <strong>{answerAction}</strong>.', price: 'R$ 14,90', captureAction: '“Clique para Corrigir”', answerAction: '“Obter Resposta”', paymentButton: "CLIQUE AQUI PARA PAGAR", loadingCheckout: "Aguarde, gerando checkout...", checkoutError: "Erro ao gerar link de pagamento.", paymentCheck: "Pagamento aprovado! Redirecionando...", paymentCheckError: "Ocorreu um problema ao verificar seu pagamento. Por favor, recarregue a página." },
-            "en": { pageTitle: "Get Answers for Your Test Questions!", headline: "🔒 1-Week Access to AI Proofreader", subheadline: 'Make the payment of <strong>{price}</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click on <strong>{captureAction}</strong> and then on <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Click to Correct”', answerAction: '“Get Answer”', paymentButton: "CLICK HERE TO PAY", loadingCheckout: "Please wait, generating checkout...", checkoutError: "Error generating payment link.", paymentCheck: "Payment approved! Redirecting...", paymentCheckError: "There was a problem verifying your payment. Please reload the page." },
-            "es": { pageTitle: "¡Obtenga Respuestas para sus Preguntas de Examen!", headline: "🔒 Acceso de 1 Semana al Corrector IA", subheadline: 'Realice el pago de <strong>{price}</strong> para desbloquear el acceso. Después del pago, regrese al sitio y otorgue permiso a la cámara. Apunte la cámara a las preguntas, haga clic en <strong>{captureAction}</strong> y luego en <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Clic para Corregir”', answerAction: '“Obtener Respuesta”', paymentButton: "HAGA CLIC AQUÍ PARA PAGAR", loadingCheckout: "Por favor espere, generando checkout...", checkoutError: "Error al generar el enlace de pago.", paymentCheck: "¡Pago aprobado! Redirigiendo...", paymentCheckError: "Hubo un problema al verificar su pago. Por favor, recargue la página." },
-            "it": { pageTitle: "Ottieni Risposte per le Tue Domande d'Esame!", headline: "🔒 Accesso di 1 Settimana al Correttore AI", subheadline: 'Effettua il pagamento di <strong>{price}</strong> per sbloccare l\'accesso. Dopo il pagamento, torna al sito e concedi il permesso alla fotocamera. Punta la fotocamera sulle domande, fai clic su <strong>{captureAction}</strong> e poi su <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Clicca per Correggere”', answerAction: '“Ottieni Risposta”', paymentButton: "CLICCA QUI PER PAGARE", loadingCheckout: "Attendere, generazione del checkout in corso...", checkoutError: "Errore durante la generazione del link di pagamento.", paymentCheck: "Pagamento approvato! Reindirizzamento in corso...", paymentCheckError: "Si è verificato un problema durante la verifica del pagamento. Ricarica la pagina." },
-            "fr": { pageTitle: "Obtenez des Réponses à vos Questions d'Examen !", headline: "🔒 Accès d'une Semaine au Correcteur IA", subheadline: 'Effectuez le paiement de <strong>{price}</strong> pour débloquer l\'accès. Après le paiement, revenez sur le site et autorisez l\'accès à la caméra. Pointez la caméra sur les questions, cliquez sur <strong>{captureAction}</strong> puis sur <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Cliquez pour Corriger”', answerAction: '“Obtenir la Réponse”', paymentButton: "CLIQUEZ ICI POUR PAYER", loadingCheckout: "Veuillez patienter, génération du paiement en cours...", checkoutError: "Erreur lors de la génération du lien de paiement.", paymentCheck: "Paiement approuvé ! Redirection en cours...", paymentCheckError: "Un problème est survenu lors de la vérification de votre paiement. Veuillez recharger la page." },
-            "de": { pageTitle: "Erhalten Sie Antworten auf Ihre Testfragen!", headline: "🔒 1 Woche Zugang zum KI-Korrektor", subheadline: 'Zahlen Sie <strong>{price}</strong>, um den Zugang freizuschalten. Kehren Sie nach der Zahlung zur Website zurück und erteilen Sie die Kameragenehmigung. Richten Sie die Kamera auf die Fragen, klicken Sie auf <strong>{captureAction}</strong> und dann auf <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Klicken zum Korrigieren”', answerAction: '“Antwort erhalten”', paymentButton: "HIER KLICKEN ZUM BEZAHLEN", loadingCheckout: "Bitte warten, Checkout wird erstellt...", checkoutError: "Fehler beim Erstellen des Zahlungslinks.", paymentCheck: "Zahlung genehmigt! Weiterleitung...", paymentCheckError: "Bei der Überprüfung Ihrer Zahlung ist ein Problem aufgetreten. Bitte laden Sie die Seite neu." },
-            "ru": { pageTitle: "Получите ответы на вопросы вашего теста!", headline: "🔒 Доступ на 1 неделю к ИИ-корректору", subheadline: 'Произведите оплату в размере <strong>{price}</strong>, чтобы разблокировать доступ. После оплаты вернитесь на сайт и предоставьте разрешение на использование камеры. Наведите камеру на вопросы, нажмите <strong>{captureAction}</strong>, а затем <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Нажмите, чтобы исправить”', answerAction: '“Получить ответ”', paymentButton: "НАЖМИТЕ ЗДЕСЬ, ЧТОБЫ ОПЛАТИТЬ", loadingCheckout: "Пожалуйста, подождите, генерируется касса...", checkoutError: "Ошибка при создании ссылки на оплату.", paymentCheck: "Платеж одобрен! Перенаправление...", paymentCheckError: "Возникла проблема при проверке вашего платежа. Пожалуйста, перезагрузите страницу." },
-            "ja": { pageTitle: "テストの質問への回答を入手！", headline: "🔒 AI校正ツールへの1週間アクセス", subheadline: '<strong>{price}</strong>を支払ってアクセスをアンロックします。支払い後、サイトに戻ってカメラの許可を与えてください。質問にカメラを向け、<strong>{captureAction}</strong>をクリックし、次に<strong>{answerAction}</strong>をクリックします。', price: '$3.00 USD', captureAction: '“クリックして修正”', answerAction: '“回答を得る”', paymentButton: "ここをクリックして支払う", loadingCheckout: "お待ちください、チェックアウトを生成中です...", checkoutError: "支払いリンクの生成中にエラーが発生しました。", paymentCheck: "支払いが承認されました！リダイレクトしています...", paymentCheckError: "支払いの確認中に問題が発生しました。ページをリロードしてください。" },
-            "ko": { pageTitle: "시험 문제에 대한 답변을 받으세요!", headline: "🔒 AI 교정기에 1주일 액세스", subheadline: '<strong>{price}</strong>를 결제하여 액세스를 잠금 해제하세요. 결제 후 사이트로 돌아와 카메라 권한을 부여하세요. 질문에 카메라를 맞추고 <strong>{captureAction}</strong>을 클릭한 다음 <strong>{answerAction}</strong>을 클릭하세요.', price: '$3.00 USD', captureAction: '“클릭하여 수정”', answerAction: '“답변 받기”', paymentButton: "결제하려면 여기를 클릭하세요", loadingCheckout: "잠시만 기다려주세요, 체크아웃 생성 중...", checkoutError: "결제 링크 생성 중 오류가 발생했습니다.", paymentCheck: "결제가 승인되었습니다! 리디렉션 중...", paymentCheckError: "결제 확인 중 문제가 발생했습니다. 페이지를 새로고침하세요." },
-            "zh": { pageTitle: "获取您的考试问题的答案！", headline: "🔒 AI校对器1周访问权限", subheadline: '支付<strong>{price}</strong>以解锁访问权限。付款后，返回网站并授予相机权限。将相机对准问题，单击<strong>{captureAction}</strong>，然后单击<strong>{answerAction}</strong>。', price: '$3.00 USD', captureAction: '“点击更正”', answerAction: '“获取答案”', paymentButton: "点击此处付款", loadingCheckout: "请稍候，正在生成结账...", checkoutError: "生成付款链接时出错。", paymentCheck: "付款已批准！正在重定向...", paymentCheckError: "验证您的付款时出现问题。请重新加载页面。" },
-            "hi": { pageTitle: "अपने परीक्षा प्रश्नों के उत्तर प्राप्त करें!", headline: "🔒 एआई प्रूफ़रीडर के लिए 1-सप्ताह का एक्सेस", subheadline: 'एक्सेस अनलॉक करने के लिए <strong>{price}</strong> का भुगतान करें। भुगतान के बाद, साइट पर वापस आएं और कैमरा अनुमति दें। कैमरे को प्रश्नों पर इंगित करें, <strong>{captureAction}</strong> पर क्लिक करें और फिर <strong>{answerAction}</strong> पर क्लिक करें।', price: '$3.00 USD', captureAction: '“सही करने के लिए क्लिक करें”', answerAction: '“उत्तर प्राप्त करें”', paymentButton: "भुगतान करने के लिए यहां क्लिक करें", loadingCheckout: "कृपया प्रतीक्षा करें, चेकआउट उत्पन्न हो रहा है...", checkoutError: "भुगतान लिंक उत्पन्न करने में त्रुटि।", paymentCheck: "भुगतान स्वीकृत! रीडायरेक्ट किया जा रहा है...", paymentCheckError: "आपके भुगतान को सत्यापित करने में कोई समस्या हुई। कृपया पृष्ठ को पुनः लोड करें।" },
-            "fil": { pageTitle: "Kumuha ng mga Sagot para sa Iyong mga Tanong sa Pagsusulit!", headline: "🔒 1-Linggong Access sa AI Proofreader", subheadline: 'Gawin ang pagbabayad ng <strong>{price}</strong> para i-unlock ang access. Pagkatapos magbayad, bumalik sa site at magbigay ng pahintulot sa camera. Itutok ang camera sa mga tanong, i-click ang <strong>{captureAction}</strong> at pagkatapos ay ang <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“I-click para Itama”', answerAction: '“Kumuha ng Sagot”', paymentButton: "I-CLICK DITO PARA MAGBAYAD", loadingCheckout: "Mangyaring maghintay, gumagawa ng checkout...", checkoutError: "Error sa pagbuo ng link ng pagbabayad.", paymentCheck: "Aprubado ang pagbabayad! Nagre-redirect...", paymentCheckError: "Nagkaroon ng problema sa pag-verify ng iyong bayad. Paki-reload ang pahina." },
-            "sv": { pageTitle: "Få svar på dina provfrågor!", headline: "🔒 1 veckas tillgång till AI-korrekturläsare", subheadline: 'Betala <strong>{price}</strong> för att låsa upp tillgång. Efter betalning, återvänd till webbplatsen och ge kamerabehörighet. Rikta kameran mot frågorna, klicka på <strong>{captureAction}</strong> och sedan på <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Klicka för att korrigera”', answerAction: '“Få svar”', paymentButton: "KLICKA HÄR FÖR ATT BETALA", loadingCheckout: "Vänta, skapar kassa...", checkoutError: "Fel vid skapande av betalningslänk.", paymentCheck: "Betalning godkänd! Omdirigerar...", paymentCheckError: "Ett problem uppstod vid verifiering av din betalning. Ladda om sidan." },
-            "pl": { pageTitle: "Otrzymaj odpowiedzi na pytania testowe!", headline: "🔒 1-tygodniowy dostęp do korektora AI", subheadline: 'Zapłać <strong>{price}</strong>, aby odblokować dostęp. Po dokonaniu płatności wróć na stronę i zezwól na użycie kamery. Skieruj aparat na pytania, kliknij <strong>{captureAction}</strong>, a następnie <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“Kliknij, aby poprawić”', answerAction: '“Uzyskaj odpowiedź”', paymentButton: "KLIKNIJ TUTAJ, ABY ZAPŁACIĆ", loadingCheckout: "Proszę czekać, generowanie płatności...", checkoutError: "Błąd podczas generowania linku do płatności.", paymentCheck: "Płatność zatwierdzona! Przekierowywanie...", paymentCheckError: "Wystąpił problem podczas weryfikacji płatności. Odśwież stronę." },
-            "bn": { pageTitle: "আপনার পরীক্ষার প্রশ্নের উত্তর পান!", headline: "🔒 এআই প্রুফরিডারে ১ সপ্তাহের অ্যাক্সেস", subheadline: 'অ্যাক্সেস আনলক করতে <strong>{price}</strong> প্রদান করুন। অর্থপ্রদানের পরে, সাইটে ফিরে আসুন এবং ক্যামেরা অনুমতি দিন। প্রশ্নগুলির দিকে ক্যামেরা নির্দেশ করুন, <strong>{captureAction}</strong> ক্লিক করুন এবং তারপরে <strong>{answerAction}</strong> ক্লিক করুন।', price: '$3.00 USD', captureAction: '“সংশোধন করতে ক্লিক করুন”', answerAction: '“উত্তর পান”', paymentButton: "অর্থপ্রদান করতে এখানে ক্লিক করুন", loadingCheckout: "অনুগ্রহ করে অপেক্ষা করুন, চেকআউট তৈরি হচ্ছে...", checkoutError: "পেমেন্ট লিঙ্ক তৈরিতে ত্রুটি।", paymentCheck: "পেমেন্ট অনুমোদিত! পুনঃনির্দেশিত হচ্ছে...", paymentCheckError: "আপনার পেমেন্ট যাচাই করতে একটি সমস্যা হয়েছে। অনুগ্রহ করে পৃষ্ঠাটি পুনরায় লোড করুন।" },
-            "ar": { pageTitle: "احصل على إجابات لأسئلة اختبارك!", headline: "🔒 وصول لمدة أسبوع إلى المدقق اللغوي بالذكاء الاصطناعي", subheadline: 'قم بدفع <strong>{price}</strong> لفتح الوصول. بعد الدفع، عد إلى الموقع وامنح إذن الكاميرا. وجه الكاميرا نحو الأسئلة، انقر فوق <strong>{captureAction}</strong> ثم <strong>{answerAction}</strong>.', price: '$3.00 USD', captureAction: '“انقر للتصحيح”', answerAction: '“احصل على إجابة”', paymentButton: "انقر هنا للدفع", loadingCheckout: "يرجى الانتظار، جاري إنشاء الخروج...", checkoutError: "خطأ في إنشاء رابط الدفع.", paymentCheck: "تمت الموافقة على الدفع! جارٍ إعادة التوجيه...", paymentCheckError: "حدثت مشكلة في التحقق من دفعتك. يرجى إعادة تحميل الصفحة." }
-        };
+        // Funções de Lógica (sem alterações)
+        const MP_SERVER_CREATE = "/api/create-payment";
+        const APP_PAGE = "app.html";
+        function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
+        function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
+        // MODIFICAÇÃO 3: Tempo de acesso alterado de 1 hora (3600000) para 7 dias (604800000)
+        function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
+        function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
+        function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
-        function getLanguageCode() {
-            const supportedLangs = ["pt-br", "en", "es", "it", "fr", "ru", "ja", "ko", "zh", "de", "hi", "fil", "sv", "pl", "bn", "ar"];
-            const userLang = (navigator.language || navigator.userLanguage).toLowerCase();
-            if (supportedLangs.includes(userLang)) return userLang;
-            const primaryLang = userLang.split('-')[0];
-            if (supportedLangs.includes(primaryLang)) return primaryLang;
-            return 'en';
-        }
+        // Fluxo Principal da Página
+        if (hasValidAccess()) {
+            window.location.href = APP_PAGE;
+        } else {
+            document.body.classList.remove('hidden-on-load');
 
-        function setLanguage(langCode) {
-            document.documentElement.lang = langCode;
-            const dictionary = translations[langCode] || translations['en'];
-            const priceText = dictionary.price;
-            document.querySelectorAll('[data-i18n]').forEach(element => {
-                const key = element.getAttribute('data-i18n');
-                let text = dictionary[key] || `[${key}]`;
-                if (key === 'subheadline') { text = text.replace('{price}', priceText).replace('{captureAction}', dictionary.captureAction).replace('{answerAction}', dictionary.answerAction); }
-                if (element.tagName === 'TITLE' || element.tagName === 'STRONG') { element.textContent = text; } 
-                else { element.innerHTML = text; }
+            const startBtn = document.getElementById('start-btn');
+            const pixForm = document.getElementById('pix-form');
+            const pixEmailInput = document.getElementById('pix-email');
+            const generatePixBtn = document.getElementById('generate-pix-btn');
+            const pixQrCodeContainer = document.getElementById('pix-qr-code-container');
+            const qrCodeImg = document.getElementById('pix-qr-code-image');
+            const pixCopyPasteInput = document.getElementById('pix-copy-paste-code');
+            const copyPixBtn = document.getElementById('copy-pix-btn');
+            const pixStatusText = document.getElementById('pix-status-text');
+
+            // Evento 1: Botão inicial "CLIQUE AQUI"
+            startBtn.addEventListener('click', () => {
+                switchView('payment-view');
             });
-        }
-        
-        function main() {
-            try {
-                document.body.classList.remove('hidden-on-load');
-                
-                const APP_PAGE = "/app.html";
-                function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
-                function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-                function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
 
-                if (hasValidAccess()) {
-                    window.location.href = APP_PAGE;
+            // Evento 2: Gerar o PIX
+            pixForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const email = pixEmailInput.value;
+                if (!validateEmail(email)) {
+                    alert("Por favor, insira um endereço de e-mail válido.");
                     return;
                 }
 
-                const langCode = getLanguageCode();
-                const currency = (langCode === 'pt-br') ? 'BRL' : 'USD';
-                const dictionary = translations[langCode] || translations['en'];
-                
-                setLanguage(langCode);
+                generatePixBtn.disabled = true;
+                generatePixBtn.textContent = "Aguarde...";
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const stripeSessionId = urlParams.get('session_id');
+                const sessionId = getSessionId();
+                try {
+                    const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
+                    const data = await res.json();
+                    
+                    qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
+                    pixCopyPasteInput.value = data.qrCode;
 
-                if (stripeSessionId) {
-                    const welcomeView = document.getElementById('welcome-view');
-                    welcomeView.innerHTML = `<h2>${dictionary.paymentCheck}</h2>`;
-                    setTimeout(setAccessAndRedirect, 1500);
-                } else {
-                    document.getElementById('start-btn').addEventListener('click', async () => {
-                        const btn = document.getElementById('start-btn');
-                        btn.disabled = true;
-                        btn.textContent = dictionary.loadingCheckout;
-                        
-                        const payload = { sessionId: getSessionId(), email: "user@example.com", currency, langCode: langCode };
+                    pixForm.classList.add('hidden');
+                    pixQrCodeContainer.classList.remove('hidden');
 
+                    const checkInterval = setInterval(async () => {
                         try {
-                            const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                            if (!res.ok) { const err = await res.json(); throw new Error(err.details || dictionary.checkoutError); }
-                            const data = await res.json();
-                            window.location.href = data.checkoutUrl;
-                        } catch (error) {
-                            alert(error.message);
-                            btn.disabled = false;
-                            btn.textContent = dictionary.paymentButton;
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error("Erro crítico:", error);
-                document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Error</h1><p>${error.message}</p></div>`;
-            }
-        }
+                            const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
+                            if (r.ok) {
+                                const j = await r.json();
+                                if (j.paid) {
+                                    clearInterval(checkInterval);
+                                    pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
+                                    pixStatusText.classList.remove('animate-pulse');
+                                    setTimeout(setAccessAndRedirect, 1500);
+                                }
+                            }
+                        } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
+                    }, 4000);
 
-        main();
+                } catch (error) {
+                    alert(error.message);
+                    generatePixBtn.disabled = false;
+                    generatePixBtn.textContent = "Gerar QR Code PIX";
+                }
+            });
+
+            // Evento 3: Copiar o código
+            copyPixBtn.addEventListener('click', () => {
+                pixCopyPasteInput.select();
+                document.execCommand('copy');
+                copyPixBtn.textContent = 'Copiado!';
+                setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
+            });
+        }
     </script>
 </body>
 </html>
