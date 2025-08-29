@@ -138,7 +138,6 @@
         const APP_PAGE = "app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
         function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-        // MODIFICAÇÃO 3: Tempo de acesso alterado de 1 hora (3600000) para 7 dias (604800000)
         function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
         function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
         function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
@@ -160,9 +159,19 @@
             const pixStatusText = document.getElementById('pix-status-text');
 
             // Evento 1: Botão inicial "CLIQUE AQUI"
+            // --- INÍCIO DA MODIFICAÇÃO ---
             startBtn.addEventListener('click', () => {
-                switchView('payment-view');
+                const userFullLanguage = (navigator.language || navigator.userLanguage).toLowerCase();
+                
+                if (userFullLanguage === 'pt-br') {
+                    // Se for pt-BR, continua para a tela de pagamento PIX
+                    switchView('payment-view');
+                } else {
+                    // Para pt-PT e outros idiomas, exibe um alerta
+                    alert("Este método de pagamento está disponível apenas para usuários no Brasil.");
+                }
             });
+            // --- FIM DA MODIFICAÇÃO ---
 
             // Evento 2: Gerar o PIX
             pixForm.addEventListener('submit', async (event) => {
