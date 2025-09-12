@@ -18,7 +18,6 @@
         }
         .view.active { display: flex; }
 
-        /* Estilo do Botão Principal (CLIQUE AQUI) */
         #start-btn {
             width: 100%;
             background-color: #22c55e; /* Cor verde */
@@ -34,7 +33,6 @@
         }
         #start-btn:hover { background-color: #16a34a; }
 
-        /* Estilos do Formulário e QR Code */
         #pix-form p, #pix-qr-code-container p {
             font-size: 0.9em;
             color: #ccc;
@@ -51,13 +49,12 @@
             box-sizing: border-box;
         }
 
-        /* ===== MUDANÇA REALIZADA AQUI ===== */
         #generate-pix-btn {
             width: 100%;
             background-color: #009ee3; /* Cor azul para o segundo botão */
             color: white;
             font-weight: bold;
-            font-size: 18px; /* Fonte aumentada em 50% (base 16px -> 24px) */
+            font-size: 18px; 
             padding: 0.75rem 1rem;
             border: none;
             border-radius: 0.5rem;
@@ -65,7 +62,6 @@
             transition: background-color 0.2s;
             margin-top: 1rem;
         }
-        /* ===== FIM DA MUDANÇA ===== */
         
         #generate-pix-btn:hover { background-color: #0089cc; }
         #generate-pix-btn:disabled { background-color: #555; cursor: wait; }
@@ -99,7 +95,7 @@
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
         .hidden { display: none; }
-        body.hidden-on-load { display: none; }
+        body.hidden-on-load { visibility: hidden; }
     </style>
 </head>
 <body class="hidden-on-load">
@@ -133,14 +129,66 @@
     </div>
 
     <script>
-        // Funções de Lógica (sem alterações)
-        const MP_SERVER_CREATE = "/api/create-payment";
         const APP_PAGE = "app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
-        function hasValidAccess() { const t = localStorage.getItem('accessToken'); if (!t) return false; try { return Date.now() < JSON.parse(t).expiry; } catch (e) { return false; } }
-        function setAccessAndRedirect() { const expiry = Date.now() + 604800000; localStorage.setItem("accessToken", JSON.stringify({ expiry })); window.location.href = APP_PAGE; }
         function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
         function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
+
+        // --- INÍCIO DO NOVO SISTEMA ANTI-FRAUDE ---
+
+        function hasValidAccess() {
+            const tokenString = localStorage.getItem('accessToken');
+            if (!tokenString) return false;
+            try {
+                const token = JSON.parse(tokenString);
+                const now = Date.now();
+                // Verifica se o token tem o formato correto e se o relógio não foi movido para trás
+                if (!token.expiry || !token.lastCheck || now < token.lastCheck) {
+                    localStorage.removeItem('accessToken');
+                    return false;
+                }
+                // Verifica a expiração normal
+                if (now >= token.expiry) {
+                    localStorage.removeItem('accessToken');
+                    return false;
+                }
+                // Atualiza o lastCheck e retorna true se tudo estiver OK
+                token.lastCheck = now;
+                localStorage.setItem('accessToken', JSON.stringify(token));
+                return true;
+            } catch (e) {
+                localStorage.removeItem('accessToken');
+                return false;
+            }
+        }
+
+        async function setAccessAndRedirect() {
+            try {
+                // 1. Busca a hora segura do servidor
+                const response = await fetch('/api/get-current-time');
+                if (!response.ok) throw new Error('Falha ao obter a hora do servidor');
+                const { now } = await response.json();
+                
+                // 2. Calcula a expiração com base na hora do servidor
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                const newExpiry = now + sevenDays;
+
+                // 3. Cria o token seguro com 'expiry' e 'lastCheck'
+                const token = {
+                    expiry: newExpiry,
+                    lastCheck: now 
+                };
+                localStorage.setItem("accessToken", JSON.stringify(token));
+                
+                // 4. Redireciona para a página da aplicação
+                window.location.href = APP_PAGE;
+            } catch (error) {
+                console.error("Erro ao conceder acesso:", error);
+                alert("Ocorreu um problema ao validar seu acesso. Por favor, recarregue a página.");
+            }
+        }
+        
+        // --- FIM DO NOVO SISTEMA ANTI-FRAUDE ---
 
         // Fluxo Principal da Página
         if (hasValidAccess()) {
@@ -158,22 +206,15 @@
             const copyPixBtn = document.getElementById('copy-pix-btn');
             const pixStatusText = document.getElementById('pix-status-text');
 
-            // Evento 1: Botão inicial "CLIQUE AQUI"
-            // --- INÍCIO DA MODIFICAÇÃO ---
             startBtn.addEventListener('click', () => {
                 const userFullLanguage = (navigator.language || navigator.userLanguage).toLowerCase();
-                
                 if (userFullLanguage === 'pt-br') {
-                    // Se for pt-BR, continua para a tela de pagamento PIX
                     switchView('payment-view');
                 } else {
-                    // Para pt-PT e outros idiomas, exibe um alerta
                     alert("Este método de pagamento está disponível apenas para usuários no Brasil.");
                 }
             });
-            // --- FIM DA MODIFICAÇÃO ---
 
-            // Evento 2: Gerar o PIX
             pixForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const email = pixEmailInput.value;
@@ -187,7 +228,7 @@
 
                 const sessionId = getSessionId();
                 try {
-                    const res = await fetch(MP_SERVER_CREATE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
+                    const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
                     if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
                     const data = await res.json();
                     
@@ -206,7 +247,7 @@
                                     clearInterval(checkInterval);
                                     pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
                                     pixStatusText.classList.remove('animate-pulse');
-                                    setTimeout(setAccessAndRedirect, 1500);
+                                    setTimeout(setAccessAndRedirect, 1500); // Usa a função segura
                                 }
                             }
                         } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
@@ -219,7 +260,6 @@
                 }
             });
 
-            // Evento 3: Copiar o código
             copyPixBtn.addEventListener('click', () => {
                 pixCopyPasteInput.select();
                 document.execCommand('copy');
@@ -230,3 +270,4 @@
     </script>
 </body>
 </html>
+
