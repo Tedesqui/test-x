@@ -23,7 +23,6 @@
         #confirmation-controls button.secondary { background-color: #6c757d; }
         pre#correction-result { background-color: #2a2a2a; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
         
-        /* ===== ESTILOS PARA O CONTADOR DE TEMPO (NOVO) ===== */
         #access-timer {
             position: fixed;
             top: 10px;
@@ -42,20 +41,42 @@
 <body>
 
     <script>
+        // --- INÍCIO DO NOVO SISTEMA ANTI-FRAUDE ---
         (function checkAccess() {
             const tokenString = localStorage.getItem('accessToken');
             if (!tokenString) {
                 window.location.href = 'index.html';
                 return;
             }
-            const token = JSON.parse(tokenString);
-            if (Date.now() > token.expiry) {
+            try {
+                const token = JSON.parse(tokenString);
+                const now = Date.now();
+
+                // 1. Valida o formato do token e detecta fraude (relógio movido para trás).
+                if (!token.expiry || !token.lastCheck || now < token.lastCheck) {
+                    localStorage.removeItem('accessToken');
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                // 2. Verifica se o acesso expirou normalmente.
+                if (now >= token.expiry) {
+                    localStorage.removeItem('accessToken');
+                    alert('Sua sessão de 1 semana expirou. Por favor, pague novamente.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // 3. Se o acesso for válido, atualiza o 'lastCheck' para a hora atual.
+                token.lastCheck = now;
+                localStorage.setItem('accessToken', JSON.stringify(token));
+            } catch (e) {
+                // Se o token estiver corrompido, limpa e redireciona.
                 localStorage.removeItem('accessToken');
-                // MODIFICAÇÃO 4: Mensagem de expiração alterada para "1 semana"
-                alert('Sua sessão de 1 semana expirou. Por favor, pague novamente.');
                 window.location.href = 'index.html';
             }
         })();
+        // --- FIM DO NOVO SISTEMA ANTI-FRAUDE ---
     </script>
 
     <div id="main-app">
@@ -73,12 +94,13 @@
     </div>
 
     <div id="access-timer">
-        Tempo Restante: <span id="time-left">--s</span>
+        Tempo Restante: <span id="time-left">--:--:--:--</span>
     </div>
     
     <script>
-        // --- LÓGICA DO CONTADOR DE TEMPO (NOVO) ---
+        // --- LÓGICA DO CONTADOR DE TEMPO ATUALIZADA ---
         const timerDisplay = document.getElementById('time-left');
+        // O token deve existir neste ponto se o checkAccess passou
         const tokenData = JSON.parse(localStorage.getItem('accessToken'));
 
         if (tokenData && timerDisplay) {
@@ -90,23 +112,25 @@
                 if (timeLeft <= 0) {
                     timerDisplay.textContent = 'Expirado';
                     clearInterval(timerInterval);
-                    // Força o guardião a rodar de novo para redirecionar o usuário
+                    // A função checkAccess cuidará do redirecionamento na próxima recarga
                     window.location.reload(); 
                     return;
                 }
                 
-                // MODIFICAÇÃO 5: Lógica alterada para mostrar apenas segundos
-                const totalSeconds = Math.floor(timeLeft / 1000);
-                timerDisplay.textContent = `${totalSeconds}s`;
+                // Exibição aprimorada: dias, horas, minutos, segundos
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                timerDisplay.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
             };
 
-            // Atualiza o contador a cada segundo
             const timerInterval = setInterval(updateTimer, 1000);
-            // Chama uma vez imediatamente para não esperar 1 segundo para aparecer
+            // Chamada inicial para exibir o tempo imediatamente
             updateTimer();
         }
 
-        // --- LÓGICA DA APLICAÇÃO (sem alterações) ---
+        // --- LÓGICA DA APLICAÇÃO ---
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -152,3 +176,4 @@
     </script>
 </body>
 </html>
+
