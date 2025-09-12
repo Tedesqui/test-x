@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title data-key="title">Correção de Prova com IA</title>
+    <title data-i18n="pageTitle">Correção de Prova com IA</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: black; color: white; overflow: hidden; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; }
@@ -22,61 +22,33 @@
         #confirmation-controls button.confirm { background-color: #28a745; }
         #confirmation-controls button.secondary { background-color: #6c757d; }
         pre#correction-result { background-color: #2a2a2a; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
-        
-        #access-timer {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.9em;
-            z-index: 10;
-            border: 1px solid #444;
-        }
+        #access-timer { position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9em; z-index: 10; border: 1px solid #444; }
+        [dir="rtl"] #access-timer { right: auto; left: 10px; }
     </style>
 </head>
 <body>
-
     <script>
-        // --- INÍCIO DO NOVO SISTEMA ANTI-FRAUDE ---
+        // --- SISTEMA ANTI-FRAUDE ---
         (function checkAccess() {
             const tokenString = localStorage.getItem('accessToken');
-            if (!tokenString) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!tokenString) { window.location.href = 'index.html'; return; }
             try {
                 const token = JSON.parse(tokenString);
                 const now = Date.now();
-
-                // 1. Valida o formato do token e detecta fraude (relógio movido para trás).
-                if (!token.expiry || !token.lastCheck || now < token.lastCheck) {
-                    localStorage.removeItem('accessToken');
-                    window.location.href = 'index.html';
-                    return;
-                }
-                
-                // 2. Verifica se o acesso expirou normalmente.
+                if (!token.expiry || !token.lastCheck || now < token.lastCheck) { localStorage.removeItem('accessToken'); window.location.href = 'index.html'; return; }
                 if (now >= token.expiry) {
                     localStorage.removeItem('accessToken');
-                    alert('Sua sessão de 1 semana expirou. Por favor, pague novamente.');
+                    // O alerta será traduzido depois que o dicionário carregar
+                    const userLang = (localStorage.getItem('userLang') || 'pt').split('-')[0];
+                    const alertMessages = { pt: 'Sua sessão de 1 semana expirou. Por favor, pague novamente.', en: 'Your 1-week session has expired. Please pay again.', es: 'Su sesión de 1 semana ha expirado. Por favor, pague de nuevo.', fr: "Votre session d'une semaine a expiré. Veuillez payer à nouveau.", it: 'La tua sessione di 1 settimana è scaduta. Per favore, paga di nuovo.', de: 'Ihre 1-wöchige Sitzung ist abgelaufen. Bitte zahlen Sie erneut.', ru: 'Ваша 1-недельная сессия истекла. Пожалуйста, оплатите снова.' };
+                    alert(alertMessages[userLang] || alertMessages.en);
                     window.location.href = 'index.html';
                     return;
                 }
-
-                // 3. Se o acesso for válido, atualiza o 'lastCheck' para a hora atual.
                 token.lastCheck = now;
                 localStorage.setItem('accessToken', JSON.stringify(token));
-            } catch (e) {
-                // Se o token estiver corrompido, limpa e redireciona.
-                localStorage.removeItem('accessToken');
-                window.location.href = 'index.html';
-            }
+            } catch (e) { localStorage.removeItem('accessToken'); window.location.href = 'index.html'; }
         })();
-        // --- FIM DO NOVO SISTEMA ANTI-FRAUDE ---
     </script>
 
     <div id="main-app">
@@ -85,48 +57,79 @@
         <div id="ui-container">
             <div id="controls">
                 <button id="zoomBtn">🔍 Zoom: 1x</button>
-                <button id="captureBtn" data-key="capture_button">📷 Clique para Corrigir</button>
+                <button id="captureBtn" data-i18n="captureButton">📷 Clique para Corrigir</button>
             </div>
             <div id="output-panel">
-                <div id="status-text" data-key="status_initial">📷 Aponte a câmera para o texto e capture.</div>
+                <div id="status-text" data-i18n="statusInitial">📷 Aponte a câmera para o texto e capture.</div>
             </div>
         </div>
     </div>
 
     <div id="access-timer">
-        Tempo Restante: <span id="time-left">--:--:--:--</span>
+        <span data-i18n="timerLabel">Tempo Restante</span>: <span id="time-left">--:--:--:--</span>
     </div>
     
     <script>
-        // --- LÓGICA DO CONTADOR DE TEMPO ATUALIZADA ---
-        const timerDisplay = document.getElementById('time-left');
-        // O token deve existir neste ponto se o checkAccess passou
-        const tokenData = JSON.parse(localStorage.getItem('accessToken'));
+        // --- SISTEMA DE TRADUÇÃO ---
+        const translations = {
+            "pt": { pageTitle: "Correção de Prova com IA", captureButton: "📷 Clique para Corrigir", statusInitial: "📷 Aponte a câmera para o texto e capture.", timerLabel: "Tempo Restante", expired: "Expirado", statusReading: "🧠 Lendo o texto da imagem...", statusProcessing: "🤖 Processando com a IA...", statusErrorCamera: "❌ Erro ao acessar a câmera.", statusErrorOcr: "❌ Erro ao ler o texto: ", statusErrorApi: "❌ Erro: ", confirmPrompt: "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", retryButton: "Capturar Novamente", getAnswerButton: "Obter Resposta", emptyTextAlert: "O campo de texto não pode estar vazio.", resultTitle: "✅ Resultado", days: "d", hours: "h", minutes: "m", seconds: "s", cameraPermissionError: "<br><small>Você precisa permitir o acesso à câmera. Atualize a página se já deu permissão!</small>", cameraInUseError: "<br><small>Verifique se a câmera não está sendo usada por outro app.</small>" },
+            "en": { pageTitle: "AI Exam Corrector", captureButton: "📷 Click to Correct", statusInitial: "📷 Point the camera at the text and capture.", timerLabel: "Time Left", expired: "Expired", statusReading: "🧠 Reading text from image...", statusProcessing: "🤖 Processing with AI...", statusErrorCamera: "❌ Error accessing the camera.", statusErrorOcr: "❌ Error reading text: ", statusErrorApi: "❌ Error: ", confirmPrompt: "<strong>Review the extracted text and click to get the answer:</strong>", retryButton: "Capture Again", getAnswerButton: "Get Answer", emptyTextAlert: "The text field cannot be empty.", resultTitle: "✅ Result", days: "d", hours: "h", minutes: "m", seconds: "s", cameraPermissionError: "<br><small>You need to allow camera access. Refresh the page if you already gave permission!</small>", cameraInUseError: "<br><small>Check if the camera is not being used by another app.</small>" },
+            "es": { pageTitle: "Corrector de Exámenes con IA", captureButton: "📷 Clic para Corregir", statusInitial: "📷 Apunte la cámara al texto y capture.", timerLabel: "Tiempo Restante", expired: "Expirado", statusReading: "🧠 Leyendo texto de la imagen...", statusProcessing: "🤖 Procesando con IA...", statusErrorCamera: "❌ Error al acceder a la cámara.", statusErrorOcr: "❌ Error al leer el texto: ", statusErrorApi: "❌ Error: ", confirmPrompt: "<strong>Revise el texto extraído y haga clic para obtener la respuesta:</strong>", retryButton: "Capturar de Nuevo", getAnswerButton: "Obtener Respuesta", emptyTextAlert: "El campo de texto no puede estar vacío.", resultTitle: "✅ Resultado", days: "d", hours: "h", minutes: "m", seconds: "s", cameraPermissionError: "<br><small>Necesita permitir el acceso a la cámara. ¡Actualice la página si ya dio permiso!</small>", cameraInUseError: "<br><small>Compruebe si la cámara no está siendo utilizada por otra aplicación.</small>" },
+            "fr": { pageTitle: "Correcteur d'Examen IA", captureButton: "📷 Cliquer pour Corriger", statusInitial: "📷 Pointez la caméra sur le texte et capturez.", timerLabel: "Temps Restant", expired: "Expiré", statusReading: "🧠 Lecture du texte de l'image...", statusProcessing: "🤖 Traitement par l'IA...", statusErrorCamera: "❌ Erreur d'accès à la caméra.", statusErrorOcr: "❌ Erreur de lecture du texte: ", statusErrorApi: "❌ Erreur: ", confirmPrompt: "<strong>Vérifiez le texte extrait et cliquez pour obtenir la réponse:</strong>", retryButton: "Capturer à Nouveau", getAnswerButton: "Obtenir la Réponse", emptyTextAlert: "Le champ de texte ne peut pas être vide.", resultTitle: "✅ Résultat", days: "j", hours: "h", minutes: "m", seconds: "s", cameraPermissionError: "<br><small>Vous devez autoriser l'accès à la caméra. Actualisez la page si vous avez déjà donné la permission !</small>", cameraInUseError: "<br><small>Vérifiez si la caméra n'est pas utilisée par une autre application.</small>" },
+            "it": { pageTitle: "Correttore di Esami IA", captureButton: "📷 Clicca per Correggere", statusInitial: "📷 Punta la fotocamera sul testo e cattura.", timerLabel: "Tempo Rimanente", expired: "Scaduto", statusReading: "🧠 Lettura del testo dall'immagine...", statusProcessing: "🤖 Elaborazione con IA...", statusErrorCamera: "❌ Errore di accesso alla fotocamera.", statusErrorOcr: "❌ Errore nella lettura del testo: ", statusErrorApi: "❌ Errore: ", confirmPrompt: "<strong>Rivedi il testo estratto e clicca per ottenere la risposta:</strong>", retryButton: "Cattura di Nuovo", getAnswerButton: "Ottieni Risposta", emptyTextAlert: "Il campo di testo non può essere vuoto.", resultTitle: "✅ Risultato", days: "g", hours: "o", minutes: "m", seconds: "s", cameraPermissionError: "<br><small>È necessario consentire l'accesso alla fotocamera. Aggiorna la pagina se hai già dato il permesso!</small>", cameraInUseError: "<br><small>Controlla se la fotocamera non è utilizzata da un'altra app.</small>" },
+            "de": { pageTitle: "KI-Prüfungskorrektor", captureButton: "📷 Klicken zum Korrigieren", statusInitial: "📷 Richten Sie die Kamera auf den Text und erfassen Sie.", timerLabel: "Verbleibende Zeit", expired: "Abgelaufen", statusReading: "🧠 Text aus Bild wird gelesen...", statusProcessing: "🤖 Verarbeitung mit KI...", statusErrorCamera: "❌ Fehler beim Kamerazugriff.", statusErrorOcr: "❌ Fehler beim Lesen des Textes: ", statusErrorApi: "❌ Fehler: ", confirmPrompt: "<strong>Überprüfen Sie den extrahierten Text und klicken Sie, um die Antwort zu erhalten:</strong>", retryButton: "Erneut erfassen", getAnswerButton: "Antwort erhalten", emptyTextAlert: "Das Textfeld darf nicht leer sein.", resultTitle: "✅ Ergebnis", days: "T", hours: "S", minutes: "M", seconds: "s", cameraPermissionError: "<br><small>Sie müssen den Kamerazugriff erlauben. Aktualisieren Sie die Seite, wenn Sie bereits die Erlaubnis erteilt haben!</small>", cameraInUseError: "<br><small>Prüfen Sie, ob die Kamera nicht von einer anderen App verwendet wird.</small>" },
+            "ru": { pageTitle: "ИИ-Корректор Экзаменов", captureButton: "📷 Нажмите для исправления", statusInitial: "📷 Наведите камеру на текст и сделайте снимок.", timerLabel: "Осталось времени", expired: "Истекло", statusReading: "🧠 Чтение текста с изображения...", statusProcessing: "🤖 Обработка с помощью ИИ...", statusErrorCamera: "❌ Ошибка доступа к камере.", statusErrorOcr: "❌ Ошибка чтения текста: ", statusErrorApi: "❌ Ошибка: ", confirmPrompt: "<strong>Проверьте извлеченный текст и нажмите, чтобы получить ответ:</strong>", retryButton: "Сфотографировать снова", getAnswerButton: "Получить ответ", emptyTextAlert: "Текстовое поле не может быть пустым.", resultTitle: "✅ Результат", days: "д", hours: "ч", minutes: "м", seconds: "с", cameraPermissionError: "<br><small>Вам необходимо разрешить доступ к камере. Обновите страницу, если вы уже дали разрешение!</small>", cameraInUseError: "<br><small>Проверьте, не используется ли камера другим приложением.</small>" }
+        };
 
+        function getLanguage() {
+            const supported = ['pt', 'en', 'es', 'fr', 'it', 'de', 'ru'];
+            const lang = (navigator.language || navigator.userLanguage).toLowerCase();
+            localStorage.setItem('userLang', lang); // Salva para uso no alerta de expiração
+            const primaryLang = lang.split('-')[0];
+            if (supported.includes(primaryLang)) {
+                return primaryLang;
+            }
+            return 'en';
+        }
+        
+        const currentLang = getLanguage();
+        const dictionary = translations[currentLang];
+
+        function applyTranslations() {
+            document.documentElement.lang = currentLang;
+            if (currentLang === 'ar' || currentLang === 'he') { document.body.dir = 'rtl'; }
+            else { document.body.dir = 'ltr'; }
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dictionary[key]) {
+                    el.innerHTML = dictionary[key];
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+        
+        // --- LÓGICA DO CONTADOR ---
+        const timerDisplay = document.getElementById('time-left');
+        const tokenData = JSON.parse(localStorage.getItem('accessToken'));
         if (tokenData && timerDisplay) {
             const expiryTime = tokenData.expiry;
-
             const updateTimer = () => {
                 const timeLeft = expiryTime - Date.now();
-
                 if (timeLeft <= 0) {
-                    timerDisplay.textContent = 'Expirado';
+                    timerDisplay.textContent = dictionary.expired;
                     clearInterval(timerInterval);
-                    // A função checkAccess cuidará do redirecionamento na próxima recarga
-                    window.location.reload(); 
+                    window.location.reload();
                     return;
                 }
-                
-                // Exibição aprimorada: dias, horas, minutos, segundos
-                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                timerDisplay.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                const d = dictionary;
+                const days = Math.floor(timeLeft / 86400000);
+                const hours = Math.floor((timeLeft % 86400000) / 3600000);
+                const minutes = Math.floor((timeLeft % 3600000) / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                timerDisplay.textContent = `${days}${d.days} ${hours}${d.hours} ${minutes}${d.minutes} ${seconds}${d.seconds}`;
             };
-
             const timerInterval = setInterval(updateTimer, 1000);
-            // Chamada inicial para exibir o tempo imediatamente
             updateTimer();
         }
 
@@ -140,38 +143,33 @@
         const captureBtn = document.getElementById("captureBtn");
         let mediaTrack, currentZoom = 1;
         const zoomLevels = [1, 1.5, 2, 3];
-        const translations = { "pt": { "title": "Correção de Prova com IA", "capture_button": "📷 Clique para Corrigir", "status_initial": "📷 Aponte a câmera para o texto e capture.", "status_reading": "🧠 Lendo o texto da imagem...", "status_processing": "🤖 Processando com a IA...", "status_error_camera": "❌ Erro ao acessar a câmera.", "status_error_ocr": "❌ Erro ao ler o texto: ", "status_error_api": "❌ Erro: ", "confirm_prompt": "<strong>Revise o texto extraído e clique para obter a resposta:</strong>", "retry_button": "Capturar Novamente", "get_answer_button": "Obter Resposta", "empty_text_alert": "O campo de texto não pode estar vazio.", "result_title": "✅ Resultado" } };
-        let currentLang = 'pt';
         
         async function startCamera() {
             try {
                 const constraints = { video: { facingMode: { ideal: "environment" } } };
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { throw new Error("A API de mídia não é suportada neste navegador."); }
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 mediaTrack = stream.getVideoTracks()[0];
                 const capabilities = mediaTrack.getCapabilities();
                 if (!capabilities.zoom || capabilities.zoom.max <= 1) { zoomBtn.style.display = 'none'; }
             } catch (err) {
-                console.error("Erro ao iniciar a câmera:", err.name, err.message);
-                let userMessage = translations.pt.status_error_camera || "Erro ao acessar a câmera.";
-                if (err.name === "NotAllowedError") { userMessage += "<br><small>Você precisa permitir o acesso à câmera no seu navegador. Atualize a página se já deu permissão!</small>"; }
-                else { userMessage += `<br><small>Verifique se a câmera não está sendo usada por outro app. Erro: ${err.name}</small>`; }
+                console.error("Camera start error:", err.name, err.message);
+                let userMessage = dictionary.statusErrorCamera;
+                if (err.name === "NotAllowedError") { userMessage += dictionary.cameraPermissionError; }
+                else { userMessage += dictionary.cameraInUseError; }
                 outputPanel.innerHTML = `<div id="status-text">${userMessage}</div>`;
             }
         }
-        function setLanguage(lang) { const langCode = lang.split('-')[0]; currentLang = translations[langCode] ? langCode : 'pt'; document.documentElement.lang = currentLang; document.querySelectorAll('[data-key]').forEach(element => { const key = element.getAttribute('data-key'); if (translations[currentLang][key]) { element.innerHTML = translations[currentLang][key]; } }); const titleElement = document.querySelector('title[data-key="title"]'); if (titleElement) { titleElement.innerText = translations[currentLang].title; } }
-        function toggleZoom() { if (!mediaTrack) return; const capabilities = mediaTrack.getCapabilities(); if (!capabilities.zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; if (currentZoom > capabilities.zoom.max) currentZoom = zoomLevels[0]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
-        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text" data-key="status_initial">${translations[currentLang].status_initial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
-        function addRetryButton(action) { const existing = outputPanel.querySelector('.retry-button-bottom'); if (existing) return; const btn = document.createElement('button'); btn.innerText = translations[currentLang].retry_button; btn.className = 'retry-button-bottom'; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
-        async function captureAndRecognize() { captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none'; outputPanel.innerHTML = `<div id="status-text" data-key="status_reading">${translations[currentLang].status_reading}</div>`; try { const imageDataUrl = canvas.toDataURL('image/jpeg'); const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: imageDataUrl }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro no OCR: ${response.status}`); } const data = await response.json(); showConfirmationView(data.text.trim()); } catch (err) { console.error("Erro no OCR:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_ocr}${err.message}</div>`; addRetryButton(resetUI); } }
-        function showConfirmationView(ocrText) { const html = `<div id="confirmation-view"><p data-key="confirm_prompt">${translations[currentLang].confirm_prompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary" data-key="retry_button">${translations[currentLang].retry_button}</button><button id="sendBtn" class="confirm" data-key="get_answer_button">${translations[currentLang].get_answer_button}</button></div></div>`; outputPanel.innerHTML = html; document.getElementById('retryBtn').addEventListener('click', resetUI); document.getElementById('sendBtn').addEventListener('click', sendForCorrection); }
-        async function sendForCorrection() { const textToProcess = document.getElementById('text-to-process').value; if (!textToProcess.trim()) { alert(translations[currentLang].empty_text_alert); return; } outputPanel.innerHTML = `<div id="status-text" data-key="status_processing">${translations[currentLang].status_processing}</div>`; try { const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Erro na API: ${response.status}`); } const data = await response.json(); outputPanel.innerHTML = `<h2 data-key="result_title">${translations[currentLang].result_title}</h2><pre id="correction-result">${data.resultado}</pre>`; } catch (err) { console.error("Erro na requisição:", err); outputPanel.innerHTML = `<div id="status-text">${translations[currentLang].status_error_api}${err.message}</div>`; } finally { addRetryButton(resetUI); } }
-
+        function toggleZoom() { if (!mediaTrack || !mediaTrack.getCapabilities().zoom) return; const currentIndex = zoomLevels.indexOf(currentZoom); currentZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length]; mediaTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] }); zoomBtn.innerText = `🔍 Zoom: ${currentZoom}x`; }
+        function resetUI() { canvas.style.display = 'none'; video.style.display = 'block'; outputPanel.innerHTML = `<div id="status-text">${dictionary.statusInitial}</div>`; controlsDiv.style.display = 'flex'; captureBtn.disabled = false; }
+        function addRetryButton(action) { const btn = document.createElement('button'); btn.innerText = dictionary.retryButton; btn.style.marginTop = '15px'; btn.addEventListener('click', action); outputPanel.appendChild(btn); }
+        async function captureAndRecognize() { captureBtn.disabled = true; canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); video.style.display = 'none'; canvas.style.display = 'block'; controlsDiv.style.display = 'none'; outputPanel.innerHTML = `<div id="status-text">${dictionary.statusReading}</div>`; try { const response = await fetch("/api/read-text-aws", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: canvas.toDataURL('image/jpeg') }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `OCR Error`); } const data = await response.json(); showConfirmationView(data.text.trim()); } catch (err) { console.error("OCR Error:", err); outputPanel.innerHTML = `<div id="status-text">${dictionary.statusErrorOcr}${err.message}</div>`; addRetryButton(resetUI); } }
+        function showConfirmationView(ocrText) { outputPanel.innerHTML = `<div id="confirmation-view"><p>${dictionary.confirmPrompt}</p><textarea id="text-to-process">${ocrText}</textarea><div id="confirmation-controls"><button id="retryBtn" class="secondary">${dictionary.retryButton}</button><button id="sendBtn" class="confirm">${dictionary.getAnswerButton}</button></div></div>`; document.getElementById('retryBtn').addEventListener('click', resetUI); document.getElementById('sendBtn').addEventListener('click', sendForCorrection); }
+        async function sendForCorrection() { const textToProcess = document.getElementById('text-to-process').value; if (!textToProcess.trim()) { alert(dictionary.emptyTextAlert); return; } outputPanel.innerHTML = `<div id="status-text">${dictionary.statusProcessing}</div>`; try { const response = await fetch("/api/corrigir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: textToProcess, language: currentLang }) }); if (!response.ok) { const err = await response.json(); throw new Error(err.error || `API Error`); } const data = await response.json(); outputPanel.innerHTML = `<h2>${dictionary.resultTitle}</h2><pre id="correction-result">${data.resultado}</pre>`; } catch (err) { console.error("Request Error:", err); outputPanel.innerHTML = `<div id="status-text">${dictionary.statusErrorApi}${err.message}</div>`; } finally { addRetryButton(resetUI); } }
+        
         zoomBtn.addEventListener('click', toggleZoom);
         captureBtn.addEventListener('click', captureAndRecognize);
         
-        setLanguage(navigator.language || navigator.userLanguage);
         startCamera();
     </script>
 </body>
