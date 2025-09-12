@@ -3,97 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receba as respostas das questões da sua prova!!!</title>
+    <title data-i18n="pageTitle">Receba as respostas das questões da sua prova!!!</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        
-        .view {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 420px;
-            margin-top: -250px; /* Move o conteúdo 250px para cima */
-        }
+        .view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; margin-top: -250px; }
         .view.active { display: flex; }
-
-        #start-btn {
-            width: 100%;
-            background-color: #22c55e; /* Cor verde */
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            padding: 0.75rem 1rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            margin-top: 1.5rem;
-        }
+        #start-btn { width: 100%; background-color: #22c55e; color: white; font-weight: bold; font-size: 18px; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1.5rem; }
         #start-btn:hover { background-color: #16a34a; }
-
-        #pix-form p, #pix-qr-code-container p {
-            font-size: 0.9em;
-            color: #ccc;
-            margin-bottom: 1rem;
-        }
-
-        #pix-email, #pix-copy-paste-code {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #4a5568;
-            border-radius: 0.375rem;
-            background-color: #2d3748;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        #generate-pix-btn {
-            width: 100%;
-            background-color: #009ee3; /* Cor azul para o segundo botão */
-            color: white;
-            font-weight: bold;
-            font-size: 18px; 
-            padding: 0.75rem 1rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            margin-top: 1rem;
-        }
-        
+        #pix-form p, #pix-qr-code-container p { font-size: 0.9em; color: #ccc; margin-bottom: 1rem; }
+        #pix-email, #pix-copy-paste-code { width: 100%; padding: 0.75rem; border: 1px solid #4a5568; border-radius: 0.375rem; background-color: #2d3748; color: white; box-sizing: border-box; }
+        #generate-pix-btn { width: 100%; background-color: #009ee3; color: white; font-weight: bold; font-size: 18px; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1rem; }
         #generate-pix-btn:hover { background-color: #0089cc; }
         #generate-pix-btn:disabled { background-color: #555; cursor: wait; }
-
         #pix-qr-code-container { margin-top: 1.5rem; }
-        #pix-qr-code-image {
-            margin: 0 auto;
-            border: 4px solid white;
-            border-radius: 0.5rem;
-            max-width: 280px;
-        }
-
+        #pix-qr-code-image { margin: 0 auto; border: 4px solid white; border-radius: 0.5rem; max-width: 280px; }
         .input-group { display: flex; margin-top: 1rem; }
         #pix-copy-paste-code { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
-        
-        #copy-pix-btn {
-            background-color: #22c55e;
-            font-size: 0.9em;
-            font-weight: bold;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-top-right-radius: 0.375rem;
-            border-bottom-right-radius: 0.375rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+        #copy-pix-btn { background-color: #22c55e; font-size: 0.9em; font-weight: bold; color: white; padding: 0.75rem; border: none; border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s; }
         #copy-pix-btn:hover { background-color: #16a34a; }
-
         @keyframes pulse { 50% { opacity: .5; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
         .hidden { display: none; }
         body.hidden-on-load { visibility: hidden; }
     </style>
@@ -103,56 +33,89 @@
     <div class="container">
         
         <div id="welcome-view" class="view active">
-            <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
-            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após realizar o pagamento, retorne ao site e dê permissão para o site usar a câmera do seu celular. Com a câmera aberta dentro do site, aponte para as questões e clique no botão <strong>“Clique para Corrigir”</strong> para o site identificar o texto, e em seguida clique em <strong>“Obter Resposta”</strong>.</p>
-            <button id="start-btn">CLIQUE AQUI</button>
+            <h2 data-i18n="headline">🔒 Acesso por 1 Semana à Correção de Provas</h2>
+            <p style="font-size: 1.1em; line-height: 1.5;" data-i18n="subheadline">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso...</p>
+            <button id="start-btn" data-i18n="paymentButton">CLIQUE AQUI</button>
         </div>
 
         <div id="payment-view" class="view">
             <form id="pix-form">
-                <p>Para gerar o QR Code, informe seu e-mail.</p>
-                <input type="email" id="pix-email" placeholder="seuemail@exemplo.com" required>
-                <button type="submit" id="generate-pix-btn">Gerar QR Code PIX</button>
+                <p data-i18n="emailPrompt">Para gerar o QR Code, informe seu e-mail.</p>
+                <input type="email" id="pix-email" data-i18n-placeholder="emailPlaceholder" placeholder="seuemail@exemplo.com" required>
+                <button type="submit" id="generate-pix-btn" data-i18n="generatePixButton">Gerar QR Code PIX</button>
             </form>
 
             <div id="pix-qr-code-container" class="hidden">
-                <p style="font-weight: 600;">Escaneie o QR Code ou use o Copia e Cola:</p>
+                <p style="font-weight: 600;" data-i18n="qrCodePrompt">Escaneie o QR Code ou use o Copia e Cola:</p>
                 <img id="pix-qr-code-image" src="" alt="QR Code PIX">
                 <div class="input-group">
                     <input type="text" id="pix-copy-paste-code" readonly>
-                    <button type="button" id="copy-pix-btn">Copiar</button>
+                    <button type="button" id="copy-pix-btn" data-i18n="copyButton">Copiar</button>
                 </div>
-                <p id="pix-status-text" class="animate-pulse">Aguardando pagamento...</p>
+                <p id="pix-status-text" class="animate-pulse" data-i18n="waitingForPayment">Aguardando pagamento...</p>
             </div>
         </div>
 
     </div>
 
     <script>
+        // --- SISTEMA DE TRADUÇÃO ---
+        const translations = {
+            "pt": { pageTitle: "Receba as respostas das questões da sua prova!!!", headline: "🔒 Acesso por 1 Semana à Correção de Provas", subheadline: 'Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após realizar o pagamento, retorne ao site e dê permissão para o site usar a câmera do seu celular. Com a câmera aberta dentro do site, aponte para as questões e clique no botão <strong>“Clique para Corrigir”</strong> para o site identificar o texto, e em seguida clique em <strong>“Obter Resposta”</strong>.', paymentButton: "CLIQUE AQUI", emailPrompt: "Para gerar o QR Code, informe seu e-mail.", emailPlaceholder: "seuemail@exemplo.com", generatePixButton: "Gerar QR Code PIX", qrCodePrompt: "Escaneie o QR Code ou use o Copia e Cola:", copyButton: "Copiar", copiedButton: "Copiado!", waitingForPayment: "Aguardando pagamento...", paymentApproved: "Pagamento Aprovado! Redirecionando...", invalidEmail: "Por favor, insira um endereço de e-mail válido.", pixError: "Erro ao gerar o PIX.", nonBrPaymentAlert: "Este método de pagamento está disponível apenas para usuários no Brasil.", generating: "Aguarde..." },
+            "en": { pageTitle: "Get Answers for Your Test Questions!", headline: "🔒 1-Week Access to Exam Corrector", subheadline: 'Make the payment of <strong>$2.99 USD</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click the <strong>“Click to Correct”</strong> button for the site to identify the text, and then click <strong>“Get Answer”</strong>.', paymentButton: "CLICK HERE", emailPrompt: "To generate the QR Code, please enter your email.", emailPlaceholder: "youremail@example.com", generatePixButton: "Generate PIX QR Code", qrCodePrompt: "Scan the QR Code or use Copy & Paste:", copyButton: "Copy", copiedButton: "Copied!", waitingForPayment: "Awaiting payment...", paymentApproved: "Payment Approved! Redirecting...", invalidEmail: "Please enter a valid email address.", pixError: "Error generating PIX.", nonBrPaymentAlert: "This payment method is only available for users in Brazil.", generating: "Please wait..." },
+            "es": { pageTitle: "¡Obtenga las Respuestas de sus Exámenes!", headline: "🔒 Acceso de 1 Semana al Corrector de Exámenes", subheadline: 'Realice el pago de <strong>$2.99 USD</strong> para desbloquear el acceso. Después del pago, regrese al sitio y conceda permiso a la cámara. Apunte con la cámara a las preguntas, haga clic en el botón <strong>“Clic para Corregir”</strong> para que el sitio identifique el texto y luego haga clic en <strong>“Obtener Respuesta”</strong>.', paymentButton: "HAGA CLIC AQUÍ", emailPrompt: "Para generar el código QR, ingrese su correo electrónico.", emailPlaceholder: "suemail@ejemplo.com", generatePixButton: "Generar Código QR PIX", qrCodePrompt: "Escanee el código QR o use Copiar y Pegar:", copyButton: "Copiar", copiedButton: "¡Copiado!", waitingForPayment: "Esperando pago...", paymentApproved: "¡Pago Aprobado! Redirigiendo...", invalidEmail: "Por favor, ingrese una dirección de correo electrónico válida.", pixError: "Error al generar el PIX.", nonBrPaymentAlert: "Este método de pago solo está disponible para usuarios en Brasil.", generating: "Por favor espere..." },
+            "fr": { pageTitle: "Obtenez les Réponses à vos Questions d'Examen !", headline: "🔒 Accès d'une semaine au Correcteur d'Examen", subheadline: "Effectuez le paiement de <strong>€2.99 EUR</strong> pour débloquer l'accès. Après le paiement, retournez sur le site et autorisez l'accès à la caméra. Pointez la caméra sur les questions, cliquez sur le bouton <strong>« Cliquer pour Corriger »</strong> pour que le site identifie le texte, puis cliquez sur <strong>« Obtenir la Réponse »</strong>.", paymentButton: "CLIQUEZ ICI", emailPrompt: "Pour générer le QR Code, veuillez entrer votre email.", emailPlaceholder: "votreemail@exemple.com", generatePixButton: "Générer le QR Code PIX", qrCodePrompt: "Scannez le QR Code ou utilisez Copier-Coller :", copyButton: "Copier", copiedButton: "Copié !", waitingForPayment: "En attente de paiement...", paymentApproved: "Paiement Approuvé ! Redirection...", invalidEmail: "Veuillez entrer une adresse e-mail valide.", pixError: "Erreur lors de la génération du PIX.", nonBrPaymentAlert: "Ce mode de paiement n'est disponible que pour les utilisateurs au Brésil.", generating: "Veuillez patienter..." },
+            "it": { pageTitle: "Ottieni le Risposte per le Tue Domande d'Esame!", headline: "🔒 Accesso di 1 Settimana al Correttore d'Esame", subheadline: "Effettua il pagamento di <strong>€2.99 EUR</strong> per sbloccare l'accesso. Dopo il pagamento, torna al sito e concedi il permesso alla fotocamera. Punta la fotocamera sulle domande, clicca sul pulsante <strong>“Clicca per Correggere”</strong> affinché il sito identifichi il testo, e poi clicca su <strong>“Ottieni Risposta”</strong>.", paymentButton: "CLICCA QUI", emailPrompt: "Per generare il QR Code, inserisci la tua email.", emailPlaceholder: "latuaemail@esempio.com", generatePixButton: "Genera QR Code PIX", qrCodePrompt: "Scansiona il QR Code o usa Copia e Incolla:", copyButton: "Copia", copiedButton: "Copiato!", waitingForPayment: "In attesa del pagamento...", paymentApproved: "Pagamento Approvato! Reindirizzamento...", invalidEmail: "Inserisci un indirizzo email valido.", pixError: "Errore nella generazione del PIX.", nonBrPaymentAlert: "Questo metodo di pagamento è disponibile solo per gli utenti in Brasile.", generating: "Attendere prego..." },
+            "de": { pageTitle: "Erhalten Sie die Antworten auf Ihre Prüfungsfragen!", headline: "🔒 1 Woche Zugang zum Prüfungskorrektor", subheadline: "Führen Sie die Zahlung von <strong>€2.99 EUR</strong> durch, um den Zugang freizuschalten. Kehren Sie nach der Zahlung zur Website zurück und erteilen Sie die Kameragenehmigung. Richten Sie die Kamera auf die Fragen, klicken Sie auf die Schaltfläche <strong>„Klicken zum Korrigieren“</strong>, damit die Website den Text identifiziert, und klicken Sie dann auf <strong>„Antwort erhalten“</strong>.", paymentButton: "HIER KLICKEN", emailPrompt: "Um den QR-Code zu generieren, geben Sie bitte Ihre E-Mail-Adresse ein.", emailPlaceholder: "deineemail@beispiel.com", generatePixButton: "PIX QR-Code generieren", qrCodePrompt: "Scannen Sie den QR-Code oder verwenden Sie Kopieren & Einfügen:", copyButton: "Kopieren", copiedButton: "Kopiert!", waitingForPayment: "Warte auf Zahlung...", paymentApproved: "Zahlung genehmigt! Weiterleitung...", invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein.", pixError: "Fehler beim Generieren des PIX.", nonBrPaymentAlert: "Diese Zahlungsmethode ist nur für Benutzer in Brasilien verfügbar.", generating: "Bitte warten..." },
+            "ru": { pageTitle: "Получите ответы на вопросы вашего экзамена!", headline: "🔒 Доступ на 1 неделю к Корректору Экзаменов", subheadline: "Произведите оплату в размере <strong>$2.99 USD</strong>, чтобы разблокировать доступ. После оплаты вернитесь на сайт и предоставьте разрешение на использование камеры. Наведите камеру на вопросы, нажмите кнопку <strong>«Нажмите, чтобы исправить»</strong>, чтобы сайт определил текст, а затем нажмите <strong>«Получить ответ»</strong>.", paymentButton: "НАЖМИТЕ ЗДЕСЬ", emailPrompt: "Чтобы сгенерировать QR-код, введите ваш email.", emailPlaceholder: "vashemail@primer.com", generatePixButton: "Сгенерировать QR-код PIX", qrCodePrompt: "Отсканируйте QR-код или используйте Копировать и Вставить:", copyButton: "Копировать", copiedButton: "Скопировано!", waitingForPayment: "Ожидание платежа...", paymentApproved: "Платеж одобрен! Перенаправление...", invalidEmail: "Пожалуйста, введите действительный адрес электронной почты.", pixError: "Ошибка при генерации PIX.", nonBrPaymentAlert: "Этот способ оплаты доступен только для пользователей в Бразилии.", generating: "Пожалуйста, подождите..." }
+        };
+
+        function getLanguage() {
+            const supported = ['pt', 'en', 'es', 'fr', 'it', 'de', 'ru'];
+            const lang = (navigator.language || navigator.userLanguage).toLowerCase();
+            const primaryLang = lang.split('-')[0];
+            if (supported.includes(primaryLang)) {
+                return primaryLang;
+            }
+            return 'en'; // Padrão
+        }
+        
+        const currentLang = getLanguage();
+        const dictionary = translations[currentLang];
+
+        function applyTranslations() {
+            document.documentElement.lang = currentLang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dictionary[key]) {
+                    el.innerHTML = dictionary[key];
+                }
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dictionary[key]) {
+                    el.placeholder = dictionary[key];
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+        
+        // --- LÓGICA DA APLICAÇÃO ---
         const APP_PAGE = "app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
         function validateEmail(email) { const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/; return re.test(String(email).toLowerCase()); }
         function switchView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
 
-        // --- INÍCIO DO NOVO SISTEMA ANTI-FRAUDE ---
-
+        // --- SISTEMA ANTI-FRAUDE ---
         function hasValidAccess() {
             const tokenString = localStorage.getItem('accessToken');
             if (!tokenString) return false;
             try {
                 const token = JSON.parse(tokenString);
                 const now = Date.now();
-                // Verifica se o token tem o formato correto e se o relógio não foi movido para trás
-                if (!token.expiry || !token.lastCheck || now < token.lastCheck) {
-                    localStorage.removeItem('accessToken');
-                    return false;
-                }
-                // Verifica a expiração normal
-                if (now >= token.expiry) {
-                    localStorage.removeItem('accessToken');
-                    return false;
-                }
-                // Atualiza o lastCheck e retorna true se tudo estiver OK
+                if (!token.expiry || !token.lastCheck || now < token.lastCheck) { localStorage.removeItem('accessToken'); return false; }
+                if (now >= token.expiry) { localStorage.removeItem('accessToken'); return false; }
                 token.lastCheck = now;
                 localStorage.setItem('accessToken', JSON.stringify(token));
                 return true;
@@ -161,36 +124,22 @@
                 return false;
             }
         }
-
         async function setAccessAndRedirect() {
             try {
-                // 1. Busca a hora segura do servidor
                 const response = await fetch('/api/get-current-time');
-                if (!response.ok) throw new Error('Falha ao obter a hora do servidor');
+                if (!response.ok) throw new Error('Server time fetch failed');
                 const { now } = await response.json();
-                
-                // 2. Calcula a expiração com base na hora do servidor
                 const sevenDays = 7 * 24 * 60 * 60 * 1000;
-                const newExpiry = now + sevenDays;
-
-                // 3. Cria o token seguro com 'expiry' e 'lastCheck'
-                const token = {
-                    expiry: newExpiry,
-                    lastCheck: now 
-                };
+                const token = { expiry: now + sevenDays, lastCheck: now };
                 localStorage.setItem("accessToken", JSON.stringify(token));
-                
-                // 4. Redireciona para a página da aplicação
                 window.location.href = APP_PAGE;
             } catch (error) {
-                console.error("Erro ao conceder acesso:", error);
-                alert("Ocorreu um problema ao validar seu acesso. Por favor, recarregue a página.");
+                console.error("Error granting access:", error);
+                alert("Could not validate your access. Please reload the page.");
             }
         }
-        
-        // --- FIM DO NOVO SISTEMA ANTI-FRAUDE ---
 
-        // Fluxo Principal da Página
+        // --- FLUXO PRINCIPAL ---
         if (hasValidAccess()) {
             window.location.href = APP_PAGE;
         } else {
@@ -207,11 +156,11 @@
             const pixStatusText = document.getElementById('pix-status-text');
 
             startBtn.addEventListener('click', () => {
-                const userFullLanguage = (navigator.language || navigator.userLanguage).toLowerCase();
-                if (userFullLanguage === 'pt-br') {
+                const userLang = (navigator.language || navigator.userLanguage).toLowerCase();
+                if (userLang.startsWith('pt')) {
                     switchView('payment-view');
                 } else {
-                    alert("Este método de pagamento está disponível apenas para usuários no Brasil.");
+                    alert(dictionary.nonBrPaymentAlert);
                 }
             });
 
@@ -219,25 +168,20 @@
                 event.preventDefault();
                 const email = pixEmailInput.value;
                 if (!validateEmail(email)) {
-                    alert("Por favor, insira um endereço de e-mail válido.");
+                    alert(dictionary.invalidEmail);
                     return;
                 }
-
                 generatePixBtn.disabled = true;
-                generatePixBtn.textContent = "Aguarde...";
-
+                generatePixBtn.textContent = dictionary.generating;
                 const sessionId = getSessionId();
                 try {
                     const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
-                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || dictionary.pixError); }
                     const data = await res.json();
-                    
                     qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
                     pixCopyPasteInput.value = data.qrCode;
-
                     pixForm.classList.add('hidden');
                     pixQrCodeContainer.classList.remove('hidden');
-
                     const checkInterval = setInterval(async () => {
                         try {
                             const r = await fetch(`/api/check-status?sessionId=${sessionId}`);
@@ -245,26 +189,25 @@
                                 const j = await r.json();
                                 if (j.paid) {
                                     clearInterval(checkInterval);
-                                    pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
+                                    pixStatusText.textContent = dictionary.paymentApproved;
                                     pixStatusText.classList.remove('animate-pulse');
-                                    setTimeout(setAccessAndRedirect, 1500); // Usa a função segura
+                                    setTimeout(setAccessAndRedirect, 1500);
                                 }
                             }
-                        } catch (e) { console.error("Erro na verificação de status:", e); clearInterval(checkInterval); }
+                        } catch (e) { console.error("Status check error:", e); clearInterval(checkInterval); }
                     }, 4000);
-
                 } catch (error) {
                     alert(error.message);
                     generatePixBtn.disabled = false;
-                    generatePixBtn.textContent = "Gerar QR Code PIX";
+                    generatePixBtn.textContent = dictionary.generatePixButton;
                 }
             });
 
             copyPixBtn.addEventListener('click', () => {
                 pixCopyPasteInput.select();
                 document.execCommand('copy');
-                copyPixBtn.textContent = 'Copiado!';
-                setTimeout(() => { copyPixBtn.textContent = 'Copiar'; }, 2000);
+                copyPixBtn.textContent = dictionary.copiedButton;
+                setTimeout(() => { copyPixBtn.textContent = dictionary.copyButton; }, 2000);
             });
         }
     </script>
