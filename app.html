@@ -123,11 +123,8 @@
                     return;
                 }
                 const d = dictionary;
-                const days = Math.floor(timeLeft / 86400000);
-                const hours = Math.floor((timeLeft % 86400000) / 3600000);
-                const minutes = Math.floor((timeLeft % 3600000) / 60000);
-                const seconds = Math.floor((timeLeft % 60000) / 1000);
-                timerDisplay.textContent = `${days}${d.days} ${hours}${d.hours} ${minutes}${d.minutes} ${seconds}${d.seconds}`;
+                const totalSeconds = Math.floor(timeLeft / 1000);
+                timerDisplay.textContent = `${totalSeconds} ${d.seconds}`;
             };
             const timerInterval = setInterval(updateTimer, 1000);
             updateTimer();
@@ -174,4 +171,3 @@
     </script>
 </body>
 </html>
-
