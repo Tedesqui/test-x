@@ -1,11 +1,9 @@
 export default async function handler(req, res) {
-    // Apenas permite pedidos POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Método não permitido' });
     }
 
     try {
-        // Recebe o texto e o idioma do frontend
         const { texto, language } = req.body;
         if (!texto) {
             return res.status(400).json({ error: 'Nenhum texto fornecido.' });
@@ -17,32 +15,25 @@ export default async function handler(req, res) {
         }
         
         const apiUrl = 'https://api.openai.com/v1/chat/completions';
-
-        // Mapeamento de idiomas completo
         const languageMap = {
             'en': 'English', 'es': 'Spanish', 'pt': 'Brazilian Portuguese',
             'zh': 'Mandarin Chinese', 'ja': 'Japanese', 'ko': 'Korean',
             'it': 'Italian', 'de': 'German', 'fr': 'French', 'ru': 'Russian'
         };
-        
         const targetLanguage = languageMap[language] || languageMap['pt'];
 
-        // --- INÍCIO DA ALTERAÇÃO ---
-
+        // --- PROMPT ATUALIZADO PARA ENTENDER LATEX ---
         const systemPrompt = `
-            Você é um assistente de IA altamente inteligente e versátil. Sua principal função é analisar o texto do usuário e determinar a tarefa implícita para fornecer uma resposta direta e precisa.
+            Você é um assistente especialista em resolver questões acadêmicas. Sua tarefa é analisar o texto do usuário, que pode conter texto simples ou equações em formato LaTeX, e fornecer a resposta correta.
 
-            Siga estas regras para determinar a tarefa:
-            1.  **Se o texto for uma equação matemática ou um problema para resolver (ex: "9 * 9 =", "calcule a área de um círculo com raio 5"),** resolva o problema e forneça apenas o resultado final, a menos que uma explicação seja solicitada.
-            2.  **Se o texto for uma pergunta direta (ex: "Qual é a capital do Japão?"),** responda à pergunta de forma completa e precisa.
-            3.  **Se o texto for uma afirmação a ser verificada (ex: "O sol gira em torno da Terra."),** analise sua veracidade, corrija-a se estiver incorreta e forneça uma breve explicação.
-            4.  **Se o texto for uma frase para completar,** complete-a de forma lógica e coerente.
-            5.  **Se o texto for uma questão com opções de múltipla escolha (ex: com alternativas A, B, C, D),** primeiro, forneça a resolução ou a resposta correta e, em seguida, indique claramente qual é a opção correta. Exemplo: "A resposta correta é 81, que corresponde à opção C)".
+            Siga estas regras rigorosamente:
+            1.  **Prioridade para LaTeX:** Se o texto contiver código LaTeX (geralmente entre \\( ... \\) ou $$ ... $$), sua principal tarefa é resolver a equação matemática. Forneça o resultado final. Se for um problema complexo, mostre os passos da resolução de forma clara.
+            2.  **Questões de Múltipla Escolha:** Se for uma questão com alternativas (A, B, C, D), primeiro, resolva o problema ou responda à pergunta, e então, indique claramente qual alternativa é a correta.
+            3.  **Perguntas Diretas:** Se for uma pergunta textual, responda de forma precisa e direta.
+            4.  **Verificação de Fatos:** Se for uma afirmação, verifique sua veracidade e corrija-a se necessário, com uma breve explicação.
 
-            IMPORTANTE: Sua resposta DEVE ser estritamente no idioma: ${targetLanguage}.
+            IMPORTANTE: Sua resposta DEVE ser estritamente no idioma: ${targetLanguage}. Não use markdown na resposta final.
         `;
-
-        // --- FIM DA ALTERAÇÃO ---
 
         const payload = {
             model: "gpt-4o",
@@ -50,8 +41,8 @@ export default async function handler(req, res) {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: texto }
             ],
-            temperature: 0.3,
-            max_tokens: 1000
+            temperature: 0.2,
+            max_tokens: 1500
         };
 
         const apiResponse = await fetch(apiUrl, {
