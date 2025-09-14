@@ -1,6 +1,7 @@
 {
   "name": "projeto-ia-correcao-provas-mercadopago",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "@aws-sdk/client-textract": "^3.609.0",
     "axios": "^1.7.2",
