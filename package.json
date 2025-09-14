@@ -1,7 +1,6 @@
 {
   "name": "projeto-ia-correcao-provas-mercadopago",
   "version": "1.0.0",
-  "description": "Projeto de correção de provas com IA e pagamento via Mercado Pago.",
   "dependencies": {
     "@aws-sdk/client-textract": "^3.609.0",
     "axios": "^1.7.2",
