@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="pageTitle">Respostas de Provas e Exercícios para você estudar!!!</title>
+    <title>Respostas de Provas e Exercícios para você estudar!!!</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
@@ -26,13 +26,23 @@
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         .hidden { display: none; }
         body.hidden-on-load { visibility: hidden; }
-        /* Style for the note */
         .discreet-note {
-            font-size: 0.8em; /* Smaller font */
-            color: #888; /* Grey, less prominent color */
+            font-size: 0.8em;
+            color: #888;
             margin-top: 1rem;
             max-width: 90%;
             line-height: 1.4;
+        }
+        .demo-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: #64b5f6; /* Um tom de azul claro que se destaca */
+            text-decoration: underline;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .demo-link:hover {
+            color: #90caf9; /* Azul um pouco mais claro ao passar o mouse */
         }
     </style>
 </head>
@@ -41,87 +51,34 @@
     <div class="container">
         
         <div id="welcome-view" class="view active">
-            <h2 data-i18n="headline">🔒 Acesso por 1 Semana à Correção de Provas</h2>
-            <p style="font-size: 1.1em; line-height: 1.5;" data-i18n="subheadline">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso...</p>
-            <button id="start-btn" data-i18n="paymentButton">CLIQUE AQUI</button>
-            <p class="discreet-note" data-i18n="mathNote"></p>
+            <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
+            <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após o pagamento, retorne e dê permissão para o uso da câmera. Com a câmera aberta, aponte para as questões e clique em <strong>“Clique para Corrigir”</strong>, e em seguida em <strong>“Obter Resposta”</strong>.</p>
+            <button id="start-btn">CLIQUE AQUI</button>
+            <a href="https://youtube.com/shorts/bKjF9vJ9A00?si=w3GUdv2hHnY4UsfK" class="demo-link" target="_blank" rel="noopener noreferrer">Veja como funciona!</a>
+            <p class="discreet-note">Nota: Atualmente, o site não consegue realizar equações matemáticas complexas. Em breve, essa função estará disponível. Você pode utilizar o site para qualquer outra matéria tranquilamente.</p>
         </div>
 
         <div id="payment-view" class="view">
             <form id="pix-form">
-                <p data-i18n="emailPrompt">Para gerar o QR Code, informe seu e-mail.</p>
-                <input type="email" id="pix-email" data-i18n-placeholder="emailPlaceholder" placeholder="seuemail@exemplo.com" required>
-                <button type="submit" id="generate-pix-btn" data-i18n="generatePixButton">Gerar QR Code PIX</button>
+                <p>Para gerar o QR Code, informe seu e-mail.</p>
+                <input type="email" id="pix-email" placeholder="seuemail@exemplo.com" required>
+                <button type="submit" id="generate-pix-btn">Gerar QR Code PIX</button>
             </form>
 
             <div id="pix-qr-code-container" class="hidden">
-                <p style="font-weight: 600;" data-i18n="qrCodePrompt">Escaneie o QR Code ou use o Copia e Cola:</p>
+                <p style="font-weight: 600;">Escaneie o QR Code ou use o Copia e Cola:</p>
                 <img id="pix-qr-code-image" src="" alt="QR Code PIX">
                 <div class="input-group">
                     <input type="text" id="pix-copy-paste-code" readonly>
-                    <button type="button" id="copy-pix-btn" data-i18n="copyButton">Copiar</button>
+                    <button type="button" id="copy-pix-btn">Copiar</button>
                 </div>
-                <p id="pix-status-text" class="animate-pulse" data-i18n="waitingForPayment">Aguardando pagamento...</p>
+                <p id="pix-status-text" class="animate-pulse">Aguardando pagamento...</p>
             </div>
         </div>
 
     </div>
 
     <script>
-        // --- SISTEMA DE TRADUÇÃO ---
-        const translations = {
-            "pt": { 
-                pageTitle: "Receba as respostas das questões da sua prova!!!", 
-                headline: "🔒 Acesso por 1 Semana à Correção de Provas", 
-                subheadline: 'Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após o pagamento, retorne e dê permissão para o uso da câmera. Com a câmera aberta, aponte para as questões e clique em <strong>“Clique para Corrigir”</strong>, e em seguida em <strong>“Obter Resposta”</strong>.', 
-                // NOVA CHAVE DE TRADUÇÃO PARA A NOTA
-                mathNote: "Nota: Atualmente, o site não consegue realizar equações matemáticas complexas. Em breve, essa função estará disponível. Você pode utilizar o site para qualquer outra matéria tranquilamente.",
-                paymentButton: "CLIQUE AQUI", emailPrompt: "Para gerar o QR Code, informe seu e-mail.", emailPlaceholder: "seuemail@exemplo.com", generatePixButton: "Gerar QR Code PIX", qrCodePrompt: "Escaneie o QR Code ou use o Copia e Cola:", copyButton: "Copiar", copiedButton: "Copiado!", waitingForPayment: "Aguardando pagamento...", paymentApproved: "Pagamento Aprovado! Redirecionando...", invalidEmail: "Por favor, insira um endereço de e-mail válido.", pixError: "Erro ao gerar o PIX.", nonBrPaymentAlert: "Este método de pagamento está disponível apenas para usuários no Brasil.", generating: "Aguarde..." },
-            "en": { 
-                pageTitle: "Get Answers for Your Test Questions!", 
-                headline: "🔒 1-Week Access to Exam Corrector", 
-                subheadline: 'Make the payment of <strong>$2.99 USD</strong> to unlock access. After payment, return to the site and grant camera permission. Point the camera at the questions, click the <strong>“Click to Correct”</strong> button, and then click <strong>“Get Answer”</strong>.', 
-                mathNote: "Note: Currently, the site cannot solve complex mathematical equations. This feature will be available soon. You can use the site for any other subject without issues.",
-                paymentButton: "CLICK HERE", emailPrompt: "To generate the QR Code, please enter your email.", emailPlaceholder: "youremail@example.com", generatePixButton: "Generate PIX QR Code", qrCodePrompt: "Scan the QR Code or use Copy & Paste:", copyButton: "Copy", copiedButton: "Copied!", waitingForPayment: "Awaiting payment...", paymentApproved: "Payment Approved! Redirecting...", invalidEmail: "Please enter a valid email address.", pixError: "Error generating PIX.", nonBrPaymentAlert: "This payment method is only available for users in Brazil.", generating: "Please wait..." },
-            "es": { 
-                pageTitle: "¡Obtenga las Respuestas de sus Exámenes!", 
-                headline: "🔒 Acceso de 1 Semana al Corrector de Exámenes", 
-                subheadline: 'Realice el pago de <strong>$2.99 USD</strong> para desbloquear el acceso. Después del pago, regrese al sitio y conceda permiso a la cámara. Apunte con la cámara a las preguntas, haga clic en el botón <strong>“Clic para Corregir”</strong> y luego en <strong>“Obtener Respuesta”</strong>.', 
-                mathNote: "Nota: Actualmente, el sitio no puede resolver ecuaciones matemáticas complejas. Esta función estará disponible próximamente. Puede utilizar el sitio para cualquier otra materia sin problemas.",
-                paymentButton: "HAGA CLIC AQUÍ", emailPrompt: "Para generar el código QR, ingrese su correo electrónico.", emailPlaceholder: "suemail@ejemplo.com", generatePixButton: "Generar Código QR PIX", qrCodePrompt: "Escanee el código QR o use Copiar y Pegar:", copyButton: "Copiar", copiedButton: "¡Copiado!", waitingForPayment: "Esperando pago...", paymentApproved: "¡Pago Aprobado! Redirigiendo...", invalidEmail: "Por favor, ingrese una dirección de correo electrónico válida.", pixError: "Error al generar el PIX.", nonBrPaymentAlert: "Este método de pago solo está disponible para usuarios en Brasil.", generating: "Por favor espere..." }
-        };
-
-        function getLanguage() {
-            const supported = ['pt', 'en', 'es', 'fr', 'it', 'de', 'ru'];
-            const lang = (navigator.language || navigator.userLanguage).toLowerCase();
-            const primaryLang = lang.split('-')[0];
-            if (supported.includes(primaryLang)) {
-                return primaryLang;
-            }
-            return 'pt';
-        }
-        
-        const currentLang = getLanguage();
-        const dictionary = { ...translations['pt'], ...translations[currentLang] };
-
-        function applyTranslations() {
-            document.documentElement.lang = currentLang;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (dictionary[key]) {
-                    el.innerHTML = dictionary[key];
-                }
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if (dictionary[key]) {
-                    el.placeholder = dictionary[key];
-                }
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', applyTranslations);
-        
         // --- LÓGICA DA APLICAÇÃO ---
         const APP_PAGE = "app.html";
         function getSessionId() { let sid = localStorage.getItem("mp_session_id"); if (!sid || sid.length < 10) { sid = crypto.randomUUID(); localStorage.setItem("mp_session_id", sid); } return sid; }
@@ -177,27 +134,23 @@
             const pixStatusText = document.getElementById('pix-status-text');
 
             startBtn.addEventListener('click', () => {
-                const userLang = (navigator.language || navigator.userLanguage).toLowerCase();
-                if (userLang.startsWith('pt')) {
-                    switchView('payment-view');
-                } else {
-                    alert(dictionary.nonBrPaymentAlert);
-                }
+                // Lógica simplificada: sempre mostra a tela de pagamento
+                switchView('payment-view');
             });
 
             pixForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const email = pixEmailInput.value;
                 if (!validateEmail(email)) {
-                    alert(dictionary.invalidEmail);
+                    alert("Por favor, insira um endereço de e-mail válido.");
                     return;
                 }
                 generatePixBtn.disabled = true;
-                generatePixBtn.textContent = dictionary.generating;
+                generatePixBtn.textContent = "Aguarde...";
                 const sessionId = getSessionId();
                 try {
                     const res = await fetch("/api/create-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, email }) });
-                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || dictionary.pixError); }
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.details || "Erro ao gerar o PIX."); }
                     const data = await res.json();
                     qrCodeImg.src = `data:image/jpeg;base64,${data.qrCodeBase64}`;
                     pixCopyPasteInput.value = data.qrCode;
@@ -210,7 +163,7 @@
                                 const j = await r.json();
                                 if (j.paid) {
                                     clearInterval(checkInterval);
-                                    pixStatusText.textContent = dictionary.paymentApproved;
+                                    pixStatusText.textContent = "Pagamento Aprovado! Redirecionando...";
                                     pixStatusText.classList.remove('animate-pulse');
                                     setTimeout(setAccessAndRedirect, 1500);
                                 }
@@ -220,15 +173,15 @@
                 } catch (error) {
                     alert(error.message);
                     generatePixBtn.disabled = false;
-                    generatePixBtn.textContent = dictionary.generatePixButton;
+                    generatePixBtn.textContent = "Gerar QR Code PIX";
                 }
             });
 
             copyPixBtn.addEventListener('click', () => {
                 pixCopyPasteInput.select();
                 document.execCommand('copy');
-                copyPixBtn.textContent = dictionary.copiedButton;
-                setTimeout(() => { copyPixBtn.textContent = dictionary.copyButton; }, 2000);
+                copyPixBtn.textContent = "Copiado!";
+                setTimeout(() => { copyPixBtn.textContent = "Copiar"; }, 2000);
             });
         }
     </script>
