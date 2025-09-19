@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receba as respostas da sua prova!!!</title>
+    <title>Respostas de Provas e Exercícios para você estudar!!!</title>
     <style>
         body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; }
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
@@ -33,16 +33,21 @@
             max-width: 90%;
             line-height: 1.4;
         }
-        .demo-link {
-            display: inline-block;
-            margin-top: 25px;
-            color: #64b5f6; /* Um tom de azul claro que se destaca */
-            text-decoration: underline;
+        #tutorial-btn {
+            width: 100%; 
+            background-color: #f1c40f; 
+            color: black; 
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 18px;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem; 
         }
-        .demo-link:hover {
-            color: #90caf9; /* Azul um pouco mais claro ao passar o mouse */
+        #tutorial-btn:hover {
+            background-color: #f39c12; 
         }
     </style>
 </head>
@@ -54,7 +59,7 @@
             <h2>🔒 Acesso por 1 Semana à Correção de Provas</h2>
             <p style="font-size: 1.1em; line-height: 1.5;">Realize o pagamento de <strong>R$ 14,90</strong> para liberar o acesso ao site. Após o pagamento, retorne e dê permissão para o uso da câmera. Com a câmera aberta, aponte para as questões e clique em <strong>“Clique para Corrigir”</strong>, e em seguida em <strong>“Obter Resposta”</strong>.</p>
             <button id="start-btn">CLIQUE AQUI</button>
-            <a href="https://youtube.com/shorts/bKjF9vJ9A00?si=w3GUdv2hHnY4UsfK" class="demo-link" target="_blank" rel="noopener noreferrer">Veja como funciona!</a>
+            <button id="tutorial-btn" onclick="window.open('https://youtube.com/shorts/bKjF9vJ9A00?si=w3GUdv2hHnY4UsfK', '_blank')">TUTORIAL</button>
             <p class="discreet-note">Nota: Atualmente, o site não consegue realizar equações matemáticas complexas. Em breve, essa função estará disponível. Você pode utilizar o site para qualquer outra matéria tranquilamente.</p>
         </div>
 
